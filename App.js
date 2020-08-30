@@ -1,4 +1,4 @@
-import React, { useReducer, useState } from 'react';
+import React, { useReducer, useState, useEffect } from 'react';
 import './style.css';
 import Navigator from './src/Components/Navigator';
 import RequestCard from './src/Components/RequestCard'
@@ -9,7 +9,9 @@ import Steps, { StepAction, StepGroup, Step, StepEndButton } from './assets/Step
 import cake from './public/icons/birthday-cake.svg';
 import { FacebookButton } from './assets/SocialMediaButton.js'
 import { BrowserRouter as Router, Route, Switch, Link } from 'react-router-dom';
-import { LoginOutlined, LoadingOutlined } from '@ant-design/icons';
+import { LoginOutlined, LoadingOutlined, PlusCircleOutlined } from '@ant-design/icons';
+import Badge from './assets/Badge.js';
+import { useCookies, Cookies, withCookies } from 'react-cookie';
 
 const reducerFunction = (state, action) => {
     switch (action.type) {
@@ -40,9 +42,13 @@ const App = (props) => {
         username: { value: '', error: false },
         password: { value: '', error: false }
     });
+    console.log(props);
+    const [cookies, setCookie, removeCookie] = useCookies(['token']);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
     const [isRegistering, setIsRegistering] = useState(false);
+    const [loginUname, setLoginUname] = useState('');
+    const [loginUpass, setLoginUpass] = useState('');
     const handleRegister = () => {
         setIsRegistering(true);
         fetch(`http://${process.env.HOST}:${process.env.PORT}/register`, {
@@ -74,6 +80,29 @@ const App = (props) => {
         setCurrentStep(type === 'inc' ? currentStep + 1 : currentStep - 1)
     }
 
+    const handleLogin = (e) => {
+        e.preventDefault();
+        fetch(`http://${process.env.HOST}:${process.env.PORT}/validate`, {
+            method: 'post',
+            headers: {
+                'Content-Type': 'application/json',
+                'credentials': 'include'
+            },
+            body: JSON.stringify({
+                uname: loginUname,
+                upass: loginUpass,
+                token: cookies.token === 'undefined' ? undefined : cookies.token
+            })
+        })
+            .then(response => response.json())
+            .then(response => {
+                if (response.message === 'found') {
+                    setCookie('token', response.sessionID, { path: '/', sameSite: 'lax' })
+                }
+                console.log(response);
+            })
+            .catch(error => console.log(error))
+    }
 
     return (
         <>
@@ -97,11 +126,11 @@ const App = (props) => {
                     </Route>
                     <Route exact path="/login" >
                         <section className="_buildon-center-v">
-                            <form className="_buildon-form">
+                            <form className="_buildon-form" onSubmit={handleLogin}>
                                 <label>Username</label>
-                                <Input type="text" />
+                                <Input handleValue={loginUname} handleChange={value => setLoginUname(value)} type="text" name="uname" required />
                                 <label>Password</label>
-                                <Input type="password" />
+                                <Input handleValue={loginUpass} handleChange={value => setLoginUpass(value)} type="password" name="upass" />
                                 <Button><LoginOutlined /> Login</Button>
                                 <Link to="/register" className="_buildon-create-account">Create Account</Link>
                                 <div className="_buildon-text-divider">
@@ -150,7 +179,39 @@ const App = (props) => {
                         }
                     </Route>
                     <Route exact path="/user">
-                        <h1>User</h1>
+                        {/* <h1>User</h1> */}
+                        <div className="user-header">
+                            <img src="https://live.staticflickr.com/4561/38054606355_26429c884f_b.jpg" />
+                            <section>
+                                <h1>Empino, Jayrald B.</h1>
+                                <Badge>
+                                    Medical Worker
+                                    </Badge>
+
+                            </section>
+                        </div>
+                        <div className="padding-even">
+                            <div className="_buildon-note">
+                                <p>
+                                    <b>Note: </b><i>Just click a certain request to view the details</i>
+                                </p>
+                            </div>
+                            <section className="_buildon-user-panel">
+                                <div className="_buildon-user-panel-title">
+                                    <h1>Requests</h1>
+                                    <PlusCircleOutlined />
+                                </div>
+                                <div className="_buildon-user-panel-content">
+                                    <ul>
+                                        <li>Helping</li>
+                                        <li>Helping</li>
+                                        <li>Helping</li>
+                                        <li>Helping</li>
+                                        <li>Helping</li>
+                                    </ul>
+                                </div>
+                            </section>
+                        </div>
                     </Route>
                 </Switch>
             </Router>
@@ -159,4 +220,4 @@ const App = (props) => {
 
 }
 
-export default App;
+export default withCookies(App);

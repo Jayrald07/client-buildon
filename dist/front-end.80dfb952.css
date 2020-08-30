@@ -211,6 +211,90 @@ body,html {
   align-self:center;
 }
 
+.user-header {
+  /* padding: 20px; */
+  display: flex;
+  background: linear-gradient(to right,#1ca7ec,#1f2f98);
+  color: white;
+  margin-bottom: 20px
+}
+
+.user-header section ._buildon-badge {
+  color:white
+}
+
+.user-header section {
+  padding: 10px;
+  align-self :center
+}
+
+
+.user-header img {
+  width: 120px;
+  height: 120px;
+  margin-right: 10px
+}
+
+.user-header h1 {
+  font-size: 11pt;
+  margin-top:0
+}
+
+.padding-even {
+  padding: 20px;
+}
+
+._buildon-user-panel {
+  border:1px solid rgb(236, 236, 236);
+  border-radius: 3px
+}
+
+._buildon-user-panel-title h1 {
+  margin:0;
+  font-size: 11pt;
+  color: white;
+  width: 100%
+}
+._buildon-user-panel-title {
+  /* background-color: rgb(247, 247, 247); */
+  background:linear-gradient(to right,#1f2f98,#1ca7ec);
+  padding: 10px;
+  border-radius: 3px 3px 0 0;
+  display:flex
+}
+
+._buildon-user-panel-title span {
+  align-self:center;
+  color:white
+}
+
+._buildon-user-panel-content ul{
+  padding:0;
+  margin:0;
+  list-style: none;
+}
+
+._buildon-user-panel-content ul li {
+  padding: 10px;
+  font-size: 10pt;
+}
+
+._buildon-user-panel-content ul li:nth-child(2n) {
+  background-color: rgb(241, 241, 241)
+}
+
+._buildon-user-panel-content ul li:not(:last-child) {
+  border-bottom: 1px solid rgb(240, 240, 240)
+}
+
+._buildon-note {
+  padding: 10px 5px;
+  font-size: 10pt;
+}
+
+._buildon-note p {
+  margin-bottom:0
+}
 
 
 /* NORMAL NAVIGATOR */
