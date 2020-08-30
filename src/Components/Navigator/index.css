@@ -1,0 +1,129 @@
+
+
+/* NORMAL NAVIGATOR */
+
+._buildon-navigator {
+    padding: 0;
+    margin:0;
+    list-style-type: none;
+    /*position:fixed;*/
+    /*top:50px;*/
+    /*width:100%;*/
+    /*z-index: 1;*/
+    box-shadow: 0 0 5px 1px rgba(0,0,0,0.1)
+}
+
+._buildon-navigator-link {
+    display:block;
+    /*color: white;*/
+    color:#1d6ec4;
+    padding: 15px 10px;
+    text-decoration: none;
+    /*font-weight: bold*/
+}
+
+._buildon-navigator-item {
+    display: flex;
+    /*background:linear-gradient(to right,#1ca7ec 30%,#1f2f98);*/
+    background-color:white;
+}
+
+._buildon-active-bar {
+  border-left:5px solid #1ca7ec;
+}
+
+._buildon-navigator-item:not(:last-child) {
+    border-bottom: 1px solid #0000000d;
+}
+
+._buildon-navigator-link span{
+    width: 10%;
+    align-self: center;
+}
+
+._buildon-navigator-link:last-child {
+    width: 100%;
+}
+
+
+/* NORMAL NAVIGATOR BUNDLER */
+
+._buildon-navigator-top-level {
+    padding: 0;
+    margin:0;
+    list-style-type: none;
+    background-color: white;
+    box-shadow: 0 0 5px 1px rgba(0,0,0,0.1);
+    position:relative;
+    /*top:0;*/
+    /*width:100%;*/
+    z-index: 1
+
+}
+
+._buildon-navigator-tp-item {
+    display: flex;
+    /*background: linear-gradient(to right,#1ca7ec 30%,#1f2f98);*/
+    /*background-color: #f9f9f9*/
+}
+
+._buildon-navigator-tp-link {
+    display:block;
+    /*color: white;*/
+    color:#1d6ec4;
+    padding: 15px 10px;
+    text-decoration: none;
+    font-weight: bolder
+}
+
+._buildon-navigator-tp-item a{
+    width: 100%;
+}
+
+._buildon-navigator-tp-item ._buildon-navigator-collapser{
+    width: 15%;
+    /*align-self: center;*/
+    /*color: white;*/
+    color:#1d6ec4;
+    background:none;
+    border:none;
+    padding: 0;
+}
+
+/* Animation */
+
+.off {
+  display:none;
+  animation-name:slideUp;
+  animation-duration: 250ms;
+  animation-fill-mode: forwards;
+}
+
+.on {
+  display:block;
+  animation-name:slideDown;
+  animation-duration: 250ms;
+  animation-fill-mode: forwards
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px)
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0)
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 1;
+    transform: translateY(0)
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}

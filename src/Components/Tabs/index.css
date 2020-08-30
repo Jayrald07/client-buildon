@@ -1,0 +1,26 @@
+
+
+._buildon-tabs {
+    list-style: none;
+    padding:0;
+    margin:0;
+    display:flex;
+    box-shadow: 0 2px 2px 1px rgba(0,0,0,0.08)
+}
+
+._buildon-tabs li {
+    display:inline-block;
+    width:100%;
+    text-align: center;
+    padding:10px;
+    font-size:11pt;
+    color:#1d6ec4;
+}
+
+._buildon-tabs li:not(:last-child) {
+    border-right:1px solid rgba(0,0,0,0.1);
+}
+
+._buildon-tab-body {
+    padding:0 40px 10px 40px;
+}

@@ -1,0 +1,212 @@
+* {
+    font-family: Montserrat;
+    box-sizing: border-box;
+    outline: none;
+}
+
+body,html {
+  padding: 0;
+  margin:0;
+}
+
+._buildon-main {
+  padding: 10px;
+}
+
+._buildon-main h1 {
+  font-size: 15pt;
+  color:#404040;
+}
+
+._buildon-badge {
+  padding:5px 10px;
+  /*background-color: #156f9b;*/
+  font-size: 7pt;
+  color: black;
+  border-radius: 30px;
+  margin-right:5px;
+  border:1px solid #d9d9d9;
+}
+
+._buildon-header {
+  background: url("https://d1v6k5zme7ewm8.cloudfront.net/header.jpg");
+  padding:125px 10px 80px 10px;
+  text-align: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  position:relative;
+  /*margin-top: 10px;*/
+  /*border-bottom-right-radius: 150px*/
+}
+
+._buildon-header h1 {
+  margin:0;
+  font-size:14pt;
+  color:white;
+}
+
+._buildon-input {
+  padding:10px;
+  width:100%;
+  border:none;
+  border-radius: 3px
+}
+
+._buildon-form {
+  display: block;
+  justify-content:center;
+  align-self:end;
+  margin-bottom: 30px
+}
+
+._buildon-form label {
+  margin-bottom: 5px;
+  display: block
+}
+
+._buildon-text-divider {
+  border-top:1px solid rgb(216, 216, 216);
+  text-align: center;
+  margin-top:20px;
+}
+
+._buildon-text-divider span {
+  display:inline-block;
+  position:absolute;
+  transform: translateY(-12px) translateX(-15px);
+  background:white;
+  width:30px;
+  color:rgb(79, 79, 79);
+}
+
+._buildon-input-container {
+  display:flex;
+  margin-bottom: 10px;
+  border:1px solid rgb(216, 216, 216);
+  border-radius: 3px;
+  padding:1px;
+}
+
+._buildon-input-container span, ._buildon-input-container img{
+  align-self:center;
+  width:15%;
+  color:rgb(124, 124, 124);
+}
+
+._buildon-input-container img {
+  width: 8%;
+  margin: 0 8px;
+}
+
+._buildon-center-v {
+  display: grid;
+  grid-template-columns: 1fr;
+  height:75vh;
+  align-items:center;
+  padding: 0 50px;
+}
+
+._buildon-button {
+  width:100%;
+  padding:10px;
+  margin-top:20px;
+  border-radius: 3px;
+  border:none;
+  background:linear-gradient(to right,#1ca7ec,#1f2f98);
+  color:white;
+  font-weight: bold;
+  margin-bottom: 10px
+}
+
+._buildon-step-end-button {
+  margin-top:0;
+  margin-bottom: 0;
+}
+
+._buildon-social-media-button {
+  border:1px solid rgb(226, 226, 226);
+  border-radius: 50px;
+  background-color: white;
+  display:flex;
+  justify-content:center;
+  padding:10px;
+  align-self:start;
+}
+
+._buildon-social-media-button img {
+  width: 30px;
+  margin-right:10px;
+}
+
+._buildon-social-media-button span {
+  align-self:center;
+}
+
+
+._buildon-create-account {
+  font-size:9pt;
+  color:rgb(86, 86, 86)
+}
+
+._buildon-step-container {
+  display:flex;
+  margin-bottom: 30px
+}
+
+._buildon-step-container div {
+  display: inline-block
+}
+
+._buildon-step-indicator {
+  border-radius: 100%;
+  padding:10px;
+  border:1px solid #e3e3e3;
+  width:30%;
+  text-align: center;
+  align-self:center;
+}
+
+._buildon-step-line {
+  width:100%;
+  background-color: #f7f7f7;
+  padding:5px 0;
+  align-self:center;
+  border-radius: 50px;
+  margin:0 5px;
+  border:1px solid #e3e3e3
+}
+
+._buildon-steps {
+  margin-top:40px;
+}
+
+
+._buildon-step-active {
+  background-color: blue;
+  color:white;
+}
+
+._buildon-step-action {
+  display:flex;
+  margin-top:30px;
+}
+
+._buildon-step-button:first-child {
+  margin-right:10px;
+}
+
+._buildon-step-button {
+  width:100%;
+  border:none;
+  padding:10px;
+  border-radius: 3px;
+  font-size:11pt;
+  background-color: #4995d7;
+  color:white;
+}
+
+._buildon-center-v {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-self:center;
+}
