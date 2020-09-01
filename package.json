@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "parcel public/index.html --hmr-port 9000 -p 3000 "
+    "dev": "parcel public/index.html --hmr-port 9000 -p 3000 --https"
   },
   "author": "",
   "license": "ISC",
