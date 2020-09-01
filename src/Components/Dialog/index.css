@@ -10,7 +10,6 @@
     display:grid;
     grid-template-columns: 1fr;
     padding:30px;
-
 }
 
 ._buildon-dialog ._buildon-dialog-panel {
@@ -20,6 +19,7 @@
     animation-name:scaleUp;
     animation-fill-mode: forwards;
     animation-duration: 300ms;
+    justify-self: center;
 }
 
 ._buildon-dialog ._buildon-dialog-image {

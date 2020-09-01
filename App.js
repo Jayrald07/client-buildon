@@ -122,7 +122,9 @@ const App = (props) => {
     }
 
     const handleLogin = (e) => {
-        e.preventDefault();
+        if (e) {
+            e.preventDefault();
+        }
         fetch(`https://${process.env.HOST}:${process.env.PORT}/validate`, {
             method: 'post',
             headers: {
@@ -141,6 +143,9 @@ const App = (props) => {
                     location.href = "/user"
                 } else if (response.message === 'no record') {
                     alert("Username/Password is incorrect")
+                } else if (response.message === 'jwt expired') {
+                    removeCookie('token');
+                    handleLogin()
                 }
             })
             .catch(error => console.log(error))
