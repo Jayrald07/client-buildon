@@ -8,7 +8,7 @@ import Button from './assets/Button.js'
 import Steps, { StepAction, StepGroup, Step, StepEndButton } from './assets/Steps.js'
 import cake from './public/icons/birthday-cake.svg';
 import { FacebookButton } from './assets/SocialMediaButton.js'
-import { BrowserRouter as Router, Route, Switch, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Switch, Link, useLocation } from 'react-router-dom';
 import { LoginOutlined, LoadingOutlined, PlusCircleOutlined, CameraOutlined, CheckOutlined, CloseCircleFilled } from '@ant-design/icons';
 import Badge from './assets/Badge.js';
 import { useCookies, withCookies } from 'react-cookie';
@@ -54,6 +54,9 @@ const App = (props) => {
     const [isSnapped, setIsSnapped] = useState(false);
     const [takenPicture, setTakenPicture] = useState('');
     const [toggleRegister, setToggleRegister] = useState(false);
+    const [userData, setUserData] = useState({});
+    const [isLegitAccount, setIsLegitAccount] = useState(false);
+
     const handleRegister = () => {
         const { job, first_name, last_name, middle_name, birthday, username, password } = state;
         if (job.value.trim() && first_name.value.trim() && last_name.value.trim() && middle_name.value.trim() && birthday.value.trim() && username.value.trim() && password.value.trim() && takenPicture.trim() && myIDref.current.files.length) {
@@ -94,6 +97,7 @@ const App = (props) => {
                         setIsRegistering(false)
                         dispatch({ type: 'username', value: state.username.value, error: true });
                     } else if (response.message === "registered") {
+                        setCookie('token', response.token, { path: '/', sameSite: 'lax' })
                         location.href = "/user"
                     } else if (response.message === "Face not match") {
                         alert('Face not match. Try Again.');
@@ -119,7 +123,7 @@ const App = (props) => {
 
     const handleLogin = (e) => {
         e.preventDefault();
-        fetch(`http://${process.env.HOST}:${process.env.PORT}/validate`, {
+        fetch(`https://${process.env.HOST}:${process.env.PORT}/validate`, {
             method: 'post',
             headers: {
                 'Content-Type': 'application/json',
@@ -133,9 +137,11 @@ const App = (props) => {
             .then(response => response.json())
             .then(response => {
                 if (response.message === 'found') {
-                    setCookie('token', response.sessionID, { path: '/', sameSite: 'lax' })
+                    setCookie('token', response.token, { path: '/', sameSite: 'lax' })
+                    location.href = "/user"
+                } else if (response.message === 'no record') {
+                    alert("Username/Password is incorrect")
                 }
-                console.log(response);
             })
             .catch(error => console.log(error))
     }
@@ -196,10 +202,56 @@ const App = (props) => {
 
     }
 
+    const getCredentials = (tkn) => {
+        fetch(`https://${process.env.HOST}:${process.env.PORT}/credentials`, {
+            method: 'post',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                token: tkn ? tkn : cookies.token === 'undefined' ? undefined : cookies.token
+            })
+        })
+            .then(response => response.json())
+            .then(response => {
+                setUserData(response)
+            })
+    }
+
+    useEffect(() => {
+        fetch(`https://${process.env.HOST}:${process.env.PORT}/user`, {
+            method: 'post',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                token: cookies.token === 'undefined' ? undefined : cookies.token
+            })
+        })
+            .then(response => response.json())
+            .then(response => {
+                console.log(response);
+                if (response.message === 'logged') {
+                    setCookie('token', response.token, { path: '/', sameSite: 'lax' });
+                    getCredentials(response.token);
+                    setIsLegitAccount(true)
+                } else if (response.message === 'good') {
+                    setIsLegitAccount(true)
+                    if (location.pathname === '/login' || location.pathname === '/login/' || location.pathname === '/register' || location.pathname === '/register/') {
+                        location.href = "/user"
+                    } else if (location.pathname === '/user' || location.pathname === '/user/') {
+                        getCredentials()
+                    }
+                } else {
+
+                }
+            })
+    }, []);
+
     return (
         <>
             <Router>
-                <Navigator />
+                <Navigator isLogged={isLegitAccount} onLogout={() => removeCookie('token')} />
                 <Switch>
                     <Route exact path="/">
                         <header className="_buildon-header">
@@ -326,10 +378,12 @@ const App = (props) => {
                         <div className="user-header">
                             <img src="https://live.staticflickr.com/4561/38054606355_26429c884f_b.jpg" />
                             <section>
-                                <h1>Empino, Jayrald B.</h1>
+                                <h1>{userData._id ? `${userData.last_name}, ${userData.first_name} ${userData.middle_name}` : "-"}</h1>
                                 <Badge>
-                                    Medical Worker
-                                    </Badge>
+                                    {
+                                        userData._id ? `${userData.job}` : "-"
+                                    }
+                                </Badge>
 
                             </section>
                         </div>
