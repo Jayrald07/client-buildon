@@ -1,4 +1,4 @@
-import React, { useReducer, useState, useEffect, useRef } from 'react';
+import React, { useReducer, useState, useEffect, useRef, useContext } from 'react';
 import './style.css';
 import Navigator from './src/Components/Navigator';
 import RequestCard from './src/Components/RequestCard'
@@ -8,7 +8,7 @@ import Button from './assets/Button.js'
 import Steps, { StepAction, StepGroup, Step, StepEndButton } from './assets/Steps.js'
 import cake from './public/icons/birthday-cake.svg';
 import { FacebookButton } from './assets/SocialMediaButton.js'
-import { BrowserRouter as Router, Route, Switch, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Switch, Link, useParams, useLocation } from 'react-router-dom';
 import { InfoCircleFilled, PhoneFilled, CloseCircleOutlined, LoginOutlined, LoadingOutlined, PlusCircleOutlined, CameraOutlined, CheckOutlined, CloseCircleFilled } from '@ant-design/icons';
 import Badge from './assets/Badge.js';
 import { useCookies, withCookies } from 'react-cookie';
@@ -224,6 +224,26 @@ const App = (props) => {
     }
 
     useEffect(() => {
+        let search = {
+            payload: '',
+            type: '',
+            resultCode: ''
+        };
+
+        if (location.search) {
+            location.search.split("?")[1].split("&").forEach(item => {
+                search[item.split("=")[0]] = item.split("=")[1]
+            });
+        }
+
+        if (search.resultCode === 'authorised') {
+            if (cookies.alt === 'falsify') {
+                alert("Donated!");
+                removeCookie('alt');
+            }
+        }
+
+
         fetch(`https://${process.env.HOST}:${process.env.PORT}/user`, {
             method: 'post',
             headers: {

@@ -582,11 +582,11 @@ body,html {
 ._buildon-paragraph {
     text-indent: 20px;
     text-align: justify;
-    font-size: 11pt
+    font-size: 10pt
 }
 
 ._buildon-numbered-list {
-    font-size:11pt;
+    font-size:10pt;
 }
 
 ._buildon-donate {
@@ -630,13 +630,43 @@ body,html {
 }
 
 ._buildon-donate-panel ul li:not(:last-child) {
-    border-bottom: 1px solid rgb(245, 245, 245)
+    border-bottom: 1px solid rgb(245, 245, 245);
 }
 
-.fadeLeft img, .fadeLeft span{
-    animation-name: fadeOutLeft;
-    animation-fill-mode: forwards;
-    animation-duration:300ms;
+._buildon-donate-panel ul li:first-child, .list-also {
+    border-top: 1px solid rgb(245, 245, 245);
+}
+
+.list-label {
+    display:block;
+    padding: 10px;
+    color: rgb(116, 116, 116);
+    font-size: 10pt;
+    background-color: rgb(241, 241, 241);
+}
+
+.send-package-panel {
+    padding: 10px;
+    border:1px solid rgb(241, 241, 241);
+    margin-top: 10px;
+    margin-bottom:10px;
+    border-radius: 3px;
+}
+
+.send-package-panel h1 {
+    margin:0
+}
+
+.send-package-panel p{
+    font-size: 9pt
+}
+
+.send-package-panel p details {
+    margin-top: 10px
+}
+
+.send-package-panel p details summary {
+    font-weight: bold;
 }
 
 @keyframes scaleUp {
@@ -650,16 +680,6 @@ body,html {
     }
 }
 
-@keyframes fadeOutLeft {
-    from {
-        transform: translateX(0);
-        opacity:0
-    }
-    to {
-        transform: translateX(-30);
-        opacity:1
-    }
-}
 
 
 ._buildon-tabs {

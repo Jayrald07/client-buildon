@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import './index.css';
 import TabBar, { Tab } from '../Tabs/';
-import { InfoCircleFilled, PhoneFilled, CloseCircleOutlined } from '@ant-design/icons'
+import { InfoCircleFilled, PhoneFilled, CloseCircleOutlined, } from '@ant-design/icons'
 import DonateIcon from '../../../public/icons/hand.svg';
 import gcash from '../../../public/images/gcash.png';
 import paymaya from '../../../public/images/paymaya.png';
+import foodpanda from '../../../public/images/foodpanda.png';
 import { useCookies } from 'react-cookie';
+import Input from '../../../assets/Input';
+import Pin from '../../../public/icons/pin.js'
 
 
 const Dialog = (props) => {
@@ -14,29 +17,39 @@ const Dialog = (props) => {
     const [isDonate, setIsDonate] = useState(false);
     const [amount, setAmount] = useState('');
 
-    const handleAmount = (amo) => {
-        setAmount(amo)
-    }
+    const handleDonateNow = (pmethod) => {
 
-    const handleDonateNow = () => {
-        fetch('https://107.21.5.198:8080/test', {
-            method: "post",
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                paymentMethod: 'gcash',
-                amount: 10000
+        if (pmethod === 'food_panda') {
+            navigator.geolocation.getCurrentPosition(loc => {
+                location.href = `https://www.foodpanda.ph/restaurants/new?lat=${loc.coords.latitude}&lng=${loc.coords.longitude}&vertical=restaurants`
             })
-        })
-            .then(response => response.json())
-            .then(response => {
-                console.log(response);
-                if (response.action) {
-                    setCookie('pd', response.action.paymentData, { path: '/', sameSite: 'lax' })
-                    location.href = response.action.url
-                }
-            })
+        } else {
+            if (parseInt(amount)) {
+                fetch('https://107.21.5.198:8080/test', {
+                    method: "post",
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        paymentMethod: pmethod,
+                        amount: parseInt(String(amount).concat("00"))
+                    })
+                })
+                    .then(response => response.json())
+                    .then(response => {
+                        console.log(response);
+                        if (response.action) {
+                            setCookie('alt', 'falsify', { path: '/', sameSite: "lax" })
+                            setCookie('pd', response.action.paymentData, { path: '/', sameSite: 'lax' })
+                            location.href = response.action.url
+                        }
+                    })
+            } else {
+                alert("Invalid amount. Try again.")
+            }
+        }
+
+
     }
 
     const handleDonate = () => {
@@ -64,9 +77,23 @@ const Dialog = (props) => {
                                     <li>Cash</li>
                                     <li>PPEs</li>
                                 </ol>
+                                <h1>Contacts</h1>
                             </Tab>
-                            <Tab title="Contact" icon={<PhoneFilled />}>
-                                <h1>Contact</h1>
+                            <Tab title="Location" icon={<Pin />}>
+                                <h1>Address</h1>
+                                <small>#181 6th street between 11th and 12th avenue Caloocan City</small>
+                                <section className="send-package-panel">
+                                    <h1>Send a package?</h1>
+                                    <p>
+                                        Click for more details
+                                        <details>
+                                            <summary>Recepient Details</summary>
+                                            <p>
+                                                lds
+                                            </p>
+                                        </details>
+                                    </p>
+                                </section>
                             </Tab>
                         </TabBar>
                     </section>
@@ -81,9 +108,16 @@ const Dialog = (props) => {
                     </div>
                     <section className="_buildon-dialog-details">
                         <section className="_buildon-donate-panel">
+                            <label className="list-label">Cash</label>
+                            <section style={{ padding: "10px 10px 0 10px" }} className="list-also">
+                                <small>Enter amount first</small>
+                                <Input style={{ marginTop: "5px" }} handleValue={amount} handleChange={value => setAmount(value)} type="number" placeholder="0.00" />
+                            </section>
                             <ul>
-                                <li onClick={handleDonateNow} className="fadeLeft"><img src={gcash} /><span>GCash</span></li>
-                                <li><img src={paymaya} /><span>PayMaya</span></li>
+                                <li onClick={() => handleDonateNow("gcash")} className="fadeLeft"><img src={gcash} /><span>GCash</span></li>
+                                <li onClick={() => handleDonateNow("paymaya_wallet")}><img src={paymaya} /><span>PayMaya</span></li>
+                                <label className="list-label">Food</label>
+                                <li className="list-also" onClick={() => handleDonateNow("food_panda")}><img src={foodpanda} /><span>Food Panda</span></li>
                             </ul>
                         </section>
                     </section>
