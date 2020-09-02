@@ -9,7 +9,7 @@ import Steps, { StepAction, StepGroup, Step, StepEndButton } from './assets/Step
 import cake from './public/icons/birthday-cake.svg';
 import { FacebookButton } from './assets/SocialMediaButton.js'
 import { BrowserRouter as Router, Route, Switch, Link, useLocation } from 'react-router-dom';
-import { LoginOutlined, LoadingOutlined, PlusCircleOutlined, CameraOutlined, CheckOutlined, CloseCircleFilled } from '@ant-design/icons';
+import { InfoCircleFilled, PhoneFilled, CloseCircleOutlined, LoginOutlined, LoadingOutlined, PlusCircleOutlined, CameraOutlined, CheckOutlined, CloseCircleFilled } from '@ant-design/icons';
 import Badge from './assets/Badge.js';
 import { useCookies, withCookies } from 'react-cookie';
 

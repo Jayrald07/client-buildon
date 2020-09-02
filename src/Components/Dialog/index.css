@@ -53,13 +53,43 @@
     color:white;
 }
 
+
 ._buildon-dialog-close {
     width:100%;
     float:left;
     background-color: rgba(0,0,0,0.3);
     padding:10px;
     color:#eaeaea;
-    text-align: right
+    text-align: right;
+    border-radius: 3px 3px 0 0 ;
+}
+
+._buildon-donate-panel ul {
+    margin:0;
+    padding:0;
+    list-style: none;
+}
+
+._buildon-donate-panel ul li {
+    padding: 10px;
+    display:flex;
+    align-items: center;
+    transform: all 300ms;
+}
+
+._buildon-donate-panel ul li img{
+    width: 35px;
+    margin-right: 10px
+}
+
+._buildon-donate-panel ul li:not(:last-child) {
+    border-bottom: 1px solid rgb(245, 245, 245)
+}
+
+.fadeLeft img, .fadeLeft span{
+    animation-name: fadeOutLeft;
+    animation-fill-mode: forwards;
+    animation-duration:300ms;
 }
 
 @keyframes scaleUp {
@@ -70,5 +100,16 @@
     to {
         transform: translateY(0);
         opacity: 1;
+    }
+}
+
+@keyframes fadeOutLeft {
+    from {
+        transform: translateX(0);
+        opacity:0
+    }
+    to {
+        transform: translateX(-30);
+        opacity:1
     }
 }
