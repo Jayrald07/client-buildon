@@ -1,5 +1,4 @@
 import React, { useReducer, useState, useEffect, useRef, useContext } from 'react';
-import './style.css';
 import Navigator from './src/Components/Navigator';
 import RequestCard from './src/Components/RequestCard'
 import Dialog from './src/Components/Dialog';
@@ -9,9 +8,11 @@ import Steps, { StepAction, StepGroup, Step, StepEndButton } from './assets/Step
 import cake from './public/icons/birthday-cake.svg';
 import { FacebookButton } from './assets/SocialMediaButton.js'
 import { BrowserRouter as Router, Route, Switch, Link, useParams, useLocation } from 'react-router-dom';
-import { InfoCircleFilled, PhoneFilled, CloseCircleOutlined, LoginOutlined, LoadingOutlined, PlusCircleOutlined, CameraOutlined, CheckOutlined, CloseCircleFilled } from '@ant-design/icons';
+import { InfoCircleFilled, PhoneFilled, CloseCircleOutlined, AimOutlined, LoginOutlined, LoadingOutlined, PlusCircleOutlined, CameraOutlined, CheckOutlined, CloseCircleFilled } from '@ant-design/icons';
 import Badge from './assets/Badge.js';
 import { useCookies, withCookies } from 'react-cookie';
+import { Map, TileLayer, Marker, Popup } from 'react-leaflet';
+import './style.css';
 
 const reducerFunction = (state, action) => {
     switch (action.type) {
@@ -32,6 +33,21 @@ const reducerFunction = (state, action) => {
     }
 }
 
+const requestReducer = (state, action) => {
+    switch (action.type) {
+        case 'title':
+            return { ...state, title: action.value }
+        case 'description':
+            return { ...state, description: action.value }
+        case 'city':
+            return { ...state, city: action.value }
+        case 'needs':
+            return { ...state, needs: action.value }
+        default:
+            break;
+    }
+}
+
 const App = (props) => {
     const [state, dispatch] = useReducer(reducerFunction, {
         job: { value: '', error: false },
@@ -42,6 +58,12 @@ const App = (props) => {
         username: { value: '', error: false },
         password: { value: '', error: false }
     });
+    const [reqState, reqDispatch] = useReducer(requestReducer, {
+        title: '',
+        description: '',
+        city: '',
+        needs: '',
+    })
     const [cookies, setCookie, removeCookie] = useCookies(['token']);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
@@ -50,12 +72,17 @@ const App = (props) => {
     const [loginUpass, setLoginUpass] = useState('');
     const [uploadedID, setUploadedID] = useState('');
     const myIDref = useRef();
+    const myReqRef = useRef();
+    const myMapRef = useRef();
+    const [reqPic, setReqPic] = useState('');
     const [isTakePic, setIsTakePic] = useState(false);
     const [isSnapped, setIsSnapped] = useState(false);
     const [takenPicture, setTakenPicture] = useState('');
     const [toggleRegister, setToggleRegister] = useState(false);
     const [userData, setUserData] = useState({});
     const [isLegitAccount, setIsLegitAccount] = useState(false);
+    const [centerPos, setCenterPos] = useState([14.653903, 120.988914]);
+    const [zoomMap, setZoomMap] = useState(15);
 
     const handleRegister = () => {
         const { job, first_name, last_name, middle_name, birthday, username, password } = state;
@@ -219,11 +246,29 @@ const App = (props) => {
         })
             .then(response => response.json())
             .then(response => {
-                setUserData(response)
+                if (response.message === 'jwt expired') {
+                    removeCookie('token');
+                } else {
+                    setUserData(response)
+                }
             })
     }
 
+    const centralized = () => {
+        const { lat, lng } = myMapRef.current.leafletElement.getBounds().getCenter();
+        setCenterPos([lat, lng]);
+    }
+
+    const calibratePos = () => {
+        navigator.geolocation.getCurrentPosition(e => {
+            const { latitude, longitude } = e.coords;
+
+            setCenterPos([latitude, longitude]);
+        })
+    }
+
     useEffect(() => {
+
         let search = {
             payload: '',
             type: '',
@@ -255,7 +300,6 @@ const App = (props) => {
         })
             .then(response => response.json())
             .then(response => {
-                console.log(response);
                 if (response.message === 'logged') {
                     setCookie('token', response.token, { path: '/', sameSite: 'lax' });
                     getCredentials(response.token);
@@ -267,8 +311,11 @@ const App = (props) => {
                     } else if (location.pathname === '/user' || location.pathname === '/user/') {
                         getCredentials()
                     }
-                } else {
-
+                } else if (response.message === "jwt expired" || response.message === "login first") {
+                    removeCookie('token');
+                    if (location.pathname === '/user' || location.pathname === '/user/') {
+                        location.href = "/login"
+                    }
                 }
             })
     }, []);
@@ -425,14 +472,50 @@ const App = (props) => {
                                 </div>
                                 <div className="_buildon-user-panel-content">
                                     <ul>
-                                        <li>Helping</li>
-                                        <li>Helping</li>
-                                        <li>Helping</li>
-                                        <li>Helping</li>
-                                        <li>Helping</li>
+
                                     </ul>
                                 </div>
                             </section>
+                        </div>
+                        <div className="request-add-dialog">
+                            <div className="request-add-panel">
+                                {
+                                    reqPic ?
+                                        <img src={URL.createObjectURL(myReqRef.current.files[0])} />
+                                        : null
+                                }
+                                <label>Upload Picture <br /><small><b>Note: </b>use request-related picture</small></label>
+                                <Input handleValue={reqPic} forRef={myReqRef} handleChange={(value) => setReqPic(value)} type="file" />
+                                <label>Title</label>
+                                <Input handleValue={reqState.title} handleChange={value => reqDispatch({ type: 'title', value })} type="text" placeholder="" />
+                                <label>Description</label>
+                                <Input handleValue={reqState.description} handleChange={value => reqDispatch({ type: 'description', value })} type="text" placeholder="" />
+                                <label>City</label>
+                                <Input handleValue={reqState.city} handleChange={value => reqDispatch({ type: 'city', value })} type="text" placeholder="" />
+                                <label>Needs</label>
+                                <Input handleValue={reqState.needs} handleChange={value => reqDispatch({ type: 'needs', value })} type="text" placeholder="" />
+                                <details>
+                                    <summary>Location</summary>
+                                    <section>
+                                        <small><b>Note: </b>These fields will be used for informing the donator if they ever deliver a food or a package</small>
+                                        <label>Address</label>
+                                        <Input />
+                                        <label>Receiver</label>
+                                        <Input />
+                                        <section className="map-info">
+                                            <small>Coordinates: <br />Lat: {centerPos[0]}<br />Lng: {centerPos[1]}</small>
+                                            <AimOutlined onClick={calibratePos} />
+                                        </section>
+                                        <Map ref={myMapRef} onViewportChange={e => { setZoomMap(e.zoom); centralized() }} onmove={centralized} center={centerPos} zoom={zoomMap}>
+                                            <TileLayer
+                                                attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+                                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                            />
+                                            <Marker position={centerPos} />
+                                        </Map>
+                                    </section>
+                                </details>
+                            </div>
                         </div>
                     </Route>
                 </Switch>

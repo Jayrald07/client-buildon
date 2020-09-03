@@ -1,20 +1,25 @@
 {
   "name": "buildon",
   "version": "1.0.0",
-  "description": "",
+  "description": "AWS Buildon Front end",
   "main": "index.js",
   "scripts": {
     "dev": "parcel public/index.html --hmr-port 9000 -p 3000 --https"
   },
-  "author": "",
+  "author": "Jayrald B. Empino",
   "license": "ISC",
   "dependencies": {
     "@ant-design/icons": "^4.2.2",
     "assets": "^3.0.1",
+    "leaflet": "^1.6.0",
     "react": "^16.13.1",
     "react-cookie": "^4.0.3",
     "react-dom": "^16.13.1",
+    "react-leaflet": "^2.7.0",
     "react-router-dom": "^5.2.0",
     "src": "^1.1.2"
+  },
+  "devDependencies": {
+    "cssnano": "^4.1.10"
   }
 }
