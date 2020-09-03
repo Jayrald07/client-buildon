@@ -23,4 +23,6 @@
 
 ._buildon-tab-body {
     padding:0 40px 10px 40px;
+    height: 250px;
+    overflow-y: scroll
 }

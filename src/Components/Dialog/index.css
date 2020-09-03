@@ -20,6 +20,11 @@
     animation-fill-mode: forwards;
     animation-duration: 300ms;
     justify-self: center;
+    width: 100%;
+}
+
+._buildon-dialog ._buildon-dialog-panel h1 {
+    margin-bottom: 5px;
 }
 
 ._buildon-dialog ._buildon-dialog-image {

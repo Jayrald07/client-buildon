@@ -9,6 +9,8 @@ import foodpanda from '../../../public/images/foodpanda.png';
 import { useCookies } from 'react-cookie';
 import Input from '../../../assets/Input';
 import Pin from '../../../public/icons/pin.js'
+import { Map, TileLayer, Marker } from 'react-leaflet';
+
 
 
 const Dialog = (props) => {
@@ -20,9 +22,7 @@ const Dialog = (props) => {
     const handleDonateNow = (pmethod) => {
 
         if (pmethod === 'food_panda') {
-            navigator.geolocation.getCurrentPosition(loc => {
-                location.href = `https://www.foodpanda.ph/restaurants/new?lat=${loc.coords.latitude}&lng=${loc.coords.longitude}&vertical=restaurants`
-            })
+            location.href = `https://www.foodpanda.ph/restaurants/new?lat=${props.toShow.lat}&lng=${props.toShow.lng}&vertical=restaurants`
         } else {
             if (parseInt(amount)) {
                 fetch('https://107.21.5.198:8080/test', {
@@ -63,14 +63,14 @@ const Dialog = (props) => {
                     <div className="_buildon-dialog-close">
                         <CloseCircleOutlined onClick={props.onClose} />
                     </div>
-                    <figure className="_buildon-dialog-image" style={{ background: 'url("https://www.who.int/images/default-source/searo---images/countries/bangladesh/sadar-hospital-2019.tmb-479v.png?sfvrsn=d032eb0a_1%20479w")' }}></figure>
+                    <figure className="_buildon-dialog-image" style={{ background: `url(${props.toShow.img})`, backgroundSize: "cover" }}></figure>
                     <section className="_buildon-dialog-details">
                         <TabBar>
                             <Tab title="Details" icon={<InfoCircleFilled />}>
                                 <h1>Statements</h1>
                                 <p className="_buildon-paragraph">
-                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris quam est, scelerisque in eros non, tincidunt dictum diam.
-                                    </p>
+                                    {props.toShow.description}
+                                </p>
                                 <h1>Primary Needs</h1>
                                 <ol className="_buildon-numbered-list">
                                     <li>Food</li>
@@ -78,10 +78,11 @@ const Dialog = (props) => {
                                     <li>PPEs</li>
                                 </ol>
                                 <h1>Contacts</h1>
+                                <small>{props.toShow.contact}</small>
                             </Tab>
                             <Tab title="Location" icon={<Pin />}>
                                 <h1>Address</h1>
-                                <small>#181 6th street between 11th and 12th avenue Caloocan City</small>
+                                <small>{props.toShow.address}</small>
                                 <section className="send-package-panel">
                                     <h1>Send a package?</h1>
                                     <p>
@@ -89,7 +90,15 @@ const Dialog = (props) => {
                                         <details>
                                             <summary>Recepient Details</summary>
                                             <p>
-                                                lds
+                                                <h1>Receiver</h1>
+                                                <small>{props.toShow.receiver}</small>
+                                                <Map center={[props.toShow.lat, props.toShow.lng]} zoom={15}>
+                                                    <TileLayer
+                                                        attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+                                                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                                    />
+                                                    <Marker position={[props.toShow.lat, props.toShow.lng]} />
+                                                </Map>
                                             </p>
                                         </details>
                                     </p>

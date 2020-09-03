@@ -8,10 +8,10 @@ import Steps, { StepAction, StepGroup, Step, StepEndButton } from './assets/Step
 import cake from './public/icons/birthday-cake.svg';
 import { FacebookButton } from './assets/SocialMediaButton.js'
 import { BrowserRouter as Router, Route, Switch, Link, useParams, useLocation } from 'react-router-dom';
-import { InfoCircleFilled, PhoneFilled, CloseCircleOutlined, AimOutlined, LoginOutlined, LoadingOutlined, PlusCircleOutlined, CameraOutlined, CheckOutlined, CloseCircleFilled } from '@ant-design/icons';
+import { InfoCircleFilled, PhoneFilled, DeleteOutlined, CloseCircleOutlined, AimOutlined, LoginOutlined, LoadingOutlined, PlusCircleOutlined, CameraOutlined, CheckOutlined, CloseCircleFilled } from '@ant-design/icons';
 import Badge from './assets/Badge.js';
 import { useCookies, withCookies } from 'react-cookie';
-import { Map, TileLayer, Marker, Popup } from 'react-leaflet';
+import { Map, TileLayer, Marker } from 'react-leaflet';
 import './style.css';
 
 const reducerFunction = (state, action) => {
@@ -93,6 +93,14 @@ const App = (props) => {
     const [isLegitAccount, setIsLegitAccount] = useState(false);
     const [centerPos, setCenterPos] = useState([14.653903, 120.988914]);
     const [zoomMap, setZoomMap] = useState(15);
+    const [isPublishing, setIsPublishing] = useState(false);
+    const [isRequest, setIsRequest] = useState(false)
+    const [userRequests, setUserRequest] = useState([]);
+    const [allRequests, setAllRequests] = useState([]);
+    const [currentRequest, setCurrentRequest] = useState([]);
+    const [isCurrentReq, setIsCurrentReq] = useState(false);
+    const [selectedRequest, setSelectedRequest] = useState('');
+    const [isFetchinReqs, setIsFetchingReqs] = useState(true);
 
     const handleRegister = () => {
         const { job, first_name, last_name, middle_name, birthday, username, password } = state;
@@ -146,7 +154,9 @@ const App = (props) => {
         }
     }
 
-    const handleRequest = () => {
+    const handleRequest = (order) => {
+        console.log(order, allRequests[order])
+        setSelectedRequest(allRequests[order]);
         setIsDialogOpen(true);
     }
 
@@ -259,7 +269,8 @@ const App = (props) => {
                 if (response.message === 'jwt expired') {
                     removeCookie('token');
                 } else {
-                    setUserData(response)
+                    setUserData(response.userData)
+                    setUserRequest(response.requests);
                 }
             })
     }
@@ -277,12 +288,27 @@ const App = (props) => {
         })
     }
 
+    const getAllRequest = () => {
+        fetch(`https://${process.env.HOST_S}:${process.env.PORT_S}/requests/all`)
+            .then(response => response.json())
+            .then(response => {
+                if (response.message === 'got') {
+                    setIsFetchingReqs(false)
+                    setAllRequests(response.reqs);
+                } else if (response.message === 'none') {
+                    // show none
+                }
+            })
+    }
+
     const addRequest = () => {
+        setIsPublishing(true);
+
         const requestFormData = new FormData();
 
         const { title, description, city, needs, contact, address, receiver } = reqState;
 
-        if (title.trim() && description.trim() && city.trim() && needs.trim() && contact.trim() && address.trim() && centerPos[0] && centerPos[1] && cookies.token && myReqRef.current) {
+        if (title.trim() && description.trim() && city.trim() && needs.trim() && contact.trim() && address.trim() && centerPos[0] && centerPos[1] && cookies.token && myReqRef.current.files.length === 1) {
             requestFormData.append('token', cookies.token);
             requestFormData.append('title', title);
             requestFormData.append('description', description);
@@ -300,11 +326,43 @@ const App = (props) => {
                 body: requestFormData
             })
                 .then(response => response.json())
-                .then(response => console.log(response))
+                .then(response => {
+                    setIsPublishing(false);
+                    if (response.message === 'request-exceed') {
+                        alert("Requests limit reached (5/5)");
+                    } else {
+                        setIsRequest(false);
+                        getCredentials();
+                    }
+                })
         } else {
             alert("Please complete all fields");
+            setIsPublishing(false);
         }
 
+    }
+
+    const deleteReq = (order) => {
+        fetch(`https://${process.env.HOST_S}:${process.env.PORT_S}/request/delete`, {
+            method: "delete",
+            headers: {
+                'Content-Type': "application/json"
+            },
+            body: JSON.stringify({
+                reqID: userRequests[order]._id
+            })
+        })
+            .then(response => response.json())
+            .then(response => {
+                if (response.message === 'deleted') {
+                    getCredentials();
+                }
+            })
+    }
+
+    const openRequest = (order) => {
+        setIsCurrentReq(true);
+        setCurrentRequest([userRequests[order]]);
     }
 
     useEffect(() => {
@@ -340,6 +398,8 @@ const App = (props) => {
         })
             .then(response => response.json())
             .then(response => {
+                if (location.pathname === '/') getAllRequest()
+
                 if (response.message === 'logged') {
                     setCookie('token', response.token, { path: '/', sameSite: 'lax' });
                     getCredentials(response.token);
@@ -371,12 +431,24 @@ const App = (props) => {
                         </header>
                         <main className="_buildon-main">
                             <h1>Requests</h1>
-                            <RequestCard onClick={handleRequest} image="https://live.staticflickr.com/4561/38054606355_26429c884f_b.jpg" title="Barangay 89" city="Caloocan City" needs={['Food', 'Cash', 'PPEs']} />
-                            <RequestCard onClick={handleRequest} image="https://www.who.int/images/default-source/searo---images/countries/bangladesh/sadar-hospital-2019.tmb-479v.png?sfvrsn=d032eb0a_1%20479w" title="Barangay 89" city="Caloocan City" needs={['Food', 'Cash', 'PPEs']} />
+                            {
+                                isFetchinReqs ?
+                                    <div className="_buildon-center-v" style={{ height: "10vh" }}>
+                                        <LoadingOutlined />
+                                    </div>
+                                    : allRequests.length ?
+                                        allRequests.map((item, i) => {
+                                            return <RequestCard onClick={() => handleRequest(i)} image={item.img} title={item.title} city={item.city} needs={['Food', 'Cash', 'PPEs']} />
+
+                                        })
+
+                                        : <small>No Requests</small>
+                            }
+                            {/* <RequestCard onClick={handleRequest} image="https://www.who.int/images/default-source/searo---images/countries/bangladesh/sadar-hospital-2019.tmb-479v.png?sfvrsn=d032eb0a_1%20479w" title="Barangay 89" city="Caloocan City" needs={['Food', 'Cash', 'PPEs']} /> */}
                         </main>
                         {
                             isDialogOpen ?
-                                <Dialog onClose={handleClose} />
+                                <Dialog onClose={handleClose} toShow={selectedRequest} />
                                 : null
                         }
                     </Route>
@@ -508,61 +580,76 @@ const App = (props) => {
                             <section className="_buildon-user-panel">
                                 <div className="_buildon-user-panel-title">
                                     <h1>Requests</h1>
-                                    <PlusCircleOutlined />
+                                    <PlusCircleOutlined onClick={() => setIsRequest(true)} />
                                 </div>
                                 <div className="_buildon-user-panel-content">
                                     <ul>
-
+                                        {
+                                            userRequests.length ?
+                                                userRequests.map((request, i) => {
+                                                    return <li onClick={() => openRequest(i)}><span>{new Date(request.date_equested).toLocaleString()}</span> <DeleteOutlined onClick={() => deleteReq(i)} /></li>
+                                                })
+                                                : null
+                                        }
                                     </ul>
                                 </div>
                             </section>
                         </div>
-                        <div className="request-add-dialog">
-                            <div className="request-add-panel">
+
+                        <div className="request-add-dialog" style={{ display: isRequest ? "grid" : isCurrentReq ? "grid" : "none" }}>
+                            <div className={isRequest ? "request-add-panel request-on" : isCurrentReq ? "request-add-panel request-on" : "none"}>
                                 <div className="request-add-action">
-                                    <CloseCircleOutlined />
+                                    <CloseCircleOutlined onClick={() => { setIsRequest(false); setIsCurrentReq(false) }} />
                                 </div>
                                 <div style={{ padding: "10px" }}>
                                     {
-                                        reqPic ?
-                                            <img src={URL.createObjectURL(myReqRef.current.files[0])} />
-                                            : null
+                                        isRequest ?
+                                            <img src={reqPic ? URL.createObjectURL(myReqRef.current.files[0]) : null} />
+                                            : isCurrentReq ?
+                                                <img src={currentRequest[0].img} />
+                                                : null
                                     }
                                     <label>Upload Picture <br /><small><b>Note: </b>use request-related picture</small></label>
-                                    <Input handleValue={reqPic} forRef={myReqRef} handleChange={(value) => setReqPic(value)} type="file" />
+                                    <Input disabled={isCurrentReq ? true : false} handleValue={reqPic} forRef={myReqRef} handleChange={(value) => setReqPic(value)} type="file" />
                                     <label>Title</label>
-                                    <Input handleValue={reqState.title} handleChange={value => reqDispatch({ type: 'title', value })} type="text" placeholder="" />
+                                    <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].title : reqState.title} handleChange={value => reqDispatch({ type: 'title', value })} type="text" placeholder="" />
                                     <label>Description</label>
-                                    <Input handleValue={reqState.description} handleChange={value => reqDispatch({ type: 'description', value })} type="text" placeholder="" />
+                                    <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].description : reqState.description} handleChange={value => reqDispatch({ type: 'description', value })} type="text" placeholder="" />
                                     <label>City</label>
-                                    <Input handleValue={reqState.city} handleChange={value => reqDispatch({ type: 'city', value })} type="text" placeholder="" />
+                                    <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].city : reqState.city} handleChange={value => reqDispatch({ type: 'city', value })} type="text" placeholder="" />
                                     <label>Needs</label>
-                                    <Input handleValue={reqState.needs} handleChange={value => reqDispatch({ type: 'needs', value })} type="text" placeholder="" />
+                                    <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].needs : reqState.needs} handleChange={value => reqDispatch({ type: 'needs', value })} type="text" placeholder="" />
                                     <label>Contact Number</label>
-                                    <Input handleValue={reqState.contact} handleChange={value => reqDispatch({ type: 'contact', value })} type="number" />
+                                    <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].contact : reqState.contact} handleChange={value => reqDispatch({ type: 'contact', value })} type="number" />
                                     <details>
                                         <summary>Location</summary>
                                         <section>
                                             <small><b>Note: </b>These fields will be used for informing the donator if they ever deliver a food or a package</small>
                                             <label><b>Address</b></label>
-                                            <Input handleValue={reqState.address} handleChange={value => reqDispatch({ type: 'address', value })} type="text" />
+                                            <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].address : reqState.address} handleChange={value => reqDispatch({ type: 'address', value })} type="text" />
                                             <label><b>Receiver</b></label>
-                                            <Input handleValue={reqState.receiver} handleChange={value => reqDispatch({ type: 'receiver', value })} type="text" />
+                                            <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].receiver : reqState.receiver} handleChange={value => reqDispatch({ type: 'receiver', value })} type="text" />
                                             <label><b>Calibrate Position</b></label>
                                             <section className="map-info">
-                                                <small>Coordinates: <br />Lat: {centerPos[0]}<br />Lng: {centerPos[1]}</small>
+                                                <small>Coordinates: <br />Lat: {isCurrentReq ? currentRequest[0].lat : centerPos[0]}<br />Lng: {isCurrentReq ? currentRequest[0].lng : centerPos[1]}</small>
                                                 <AimOutlined onClick={calibratePos} />
                                             </section>
-                                            <Map ref={myMapRef} onViewportChange={e => { setZoomMap(e.zoom); centralized() }} onmove={centralized} center={centerPos} zoom={zoomMap}>
+                                            <Map ref={myMapRef} onViewportChange={e => { setZoomMap(e.zoom); centralized() }} onmove={centralized} center={isCurrentReq ? [currentRequest[0].lat, currentRequest[0].lng] : centerPos} zoom={zoomMap}>
                                                 <TileLayer
                                                     attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
                                                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                                                 />
-                                                <Marker position={centerPos} />
+                                                <Marker position={isCurrentReq ? [currentRequest[0].lat, currentRequest[0].lng] : centerPos} />
                                             </Map>
                                         </section>
                                     </details>
-                                    <button onClick={addRequest} className="request-add-button">Publish</button>
+                                    {
+                                        isRequest ?
+                                            <button onClick={addRequest} disabled={isPublishing} className="request-add-button">Publish</button>
+                                            : isCurrentReq ?
+                                                null
+                                                : null
+                                    }
                                 </div>
                             </div>
                         </div>
