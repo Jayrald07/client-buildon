@@ -43,6 +43,13 @@ const requestReducer = (state, action) => {
             return { ...state, city: action.value }
         case 'needs':
             return { ...state, needs: action.value }
+        case 'contact':
+            return { ...state, contact: action.value }
+        case 'address':
+            return { ...state, address: action.value }
+        case 'receiver':
+            return { ...state, receiver: action.value }
+
         default:
             break;
     }
@@ -63,6 +70,9 @@ const App = (props) => {
         description: '',
         city: '',
         needs: '',
+        contact: '',
+        address: '',
+        receiver: ''
     })
     const [cookies, setCookie, removeCookie] = useCookies(['token']);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -111,7 +121,7 @@ const App = (props) => {
             formData.append('source', file);
             formData.append('target', myIDref.current.files[0]);
 
-            fetch(`https://${process.env.HOST}:${process.env.PORT}/register`, {
+            fetch(`https://${process.env.HOST_S}:${process.env.PORT_S}/register`, {
                 method: "post",
                 body: formData
             })
@@ -152,7 +162,7 @@ const App = (props) => {
         if (e) {
             e.preventDefault();
         }
-        fetch(`https://${process.env.HOST}:${process.env.PORT}/validate`, {
+        fetch(`https://${process.env.HOST_S}:${process.env.PORT_S}/validate`, {
             method: 'post',
             headers: {
                 'Content-Type': 'application/json',
@@ -235,7 +245,7 @@ const App = (props) => {
     }
 
     const getCredentials = (tkn) => {
-        fetch(`https://${process.env.HOST}:${process.env.PORT}/credentials`, {
+        fetch(`https://${process.env.HOST_S}:${process.env.PORT_S}/credentials`, {
             method: 'post',
             headers: {
                 'Content-Type': 'application/json'
@@ -267,6 +277,36 @@ const App = (props) => {
         })
     }
 
+    const addRequest = () => {
+        const requestFormData = new FormData();
+
+        const { title, description, city, needs, contact, address, receiver } = reqState;
+
+        if (title.trim() && description.trim() && city.trim() && needs.trim() && contact.trim() && address.trim() && centerPos[0] && centerPos[1] && cookies.token && myReqRef.current) {
+            requestFormData.append('token', cookies.token);
+            requestFormData.append('title', title);
+            requestFormData.append('description', description);
+            requestFormData.append('city', city);
+            requestFormData.append('needs', needs);
+            requestFormData.append('im', myReqRef.current.files[0]);
+            requestFormData.append('contact', contact);
+            requestFormData.append('receiver', receiver);
+            requestFormData.append('address', address);
+            requestFormData.append('lat', centerPos[0]);
+            requestFormData.append('lng', centerPos[1]);
+
+            fetch(`https://${process.env.HOST_S}:${process.env.PORT_S}/request`, {
+                method: "post",
+                body: requestFormData
+            })
+                .then(response => response.json())
+                .then(response => console.log(response))
+        } else {
+            alert("Please complete all fields");
+        }
+
+    }
+
     useEffect(() => {
 
         let search = {
@@ -289,7 +329,7 @@ const App = (props) => {
         }
 
 
-        fetch(`https://${process.env.HOST}:${process.env.PORT}/user`, {
+        fetch(`https://${process.env.HOST_S}:${process.env.PORT_S}/user`, {
             method: 'post',
             headers: {
                 'Content-Type': 'application/json'
@@ -479,42 +519,51 @@ const App = (props) => {
                         </div>
                         <div className="request-add-dialog">
                             <div className="request-add-panel">
-                                {
-                                    reqPic ?
-                                        <img src={URL.createObjectURL(myReqRef.current.files[0])} />
-                                        : null
-                                }
-                                <label>Upload Picture <br /><small><b>Note: </b>use request-related picture</small></label>
-                                <Input handleValue={reqPic} forRef={myReqRef} handleChange={(value) => setReqPic(value)} type="file" />
-                                <label>Title</label>
-                                <Input handleValue={reqState.title} handleChange={value => reqDispatch({ type: 'title', value })} type="text" placeholder="" />
-                                <label>Description</label>
-                                <Input handleValue={reqState.description} handleChange={value => reqDispatch({ type: 'description', value })} type="text" placeholder="" />
-                                <label>City</label>
-                                <Input handleValue={reqState.city} handleChange={value => reqDispatch({ type: 'city', value })} type="text" placeholder="" />
-                                <label>Needs</label>
-                                <Input handleValue={reqState.needs} handleChange={value => reqDispatch({ type: 'needs', value })} type="text" placeholder="" />
-                                <details>
-                                    <summary>Location</summary>
-                                    <section>
-                                        <small><b>Note: </b>These fields will be used for informing the donator if they ever deliver a food or a package</small>
-                                        <label>Address</label>
-                                        <Input />
-                                        <label>Receiver</label>
-                                        <Input />
-                                        <section className="map-info">
-                                            <small>Coordinates: <br />Lat: {centerPos[0]}<br />Lng: {centerPos[1]}</small>
-                                            <AimOutlined onClick={calibratePos} />
+                                <div className="request-add-action">
+                                    <CloseCircleOutlined />
+                                </div>
+                                <div style={{ padding: "10px" }}>
+                                    {
+                                        reqPic ?
+                                            <img src={URL.createObjectURL(myReqRef.current.files[0])} />
+                                            : null
+                                    }
+                                    <label>Upload Picture <br /><small><b>Note: </b>use request-related picture</small></label>
+                                    <Input handleValue={reqPic} forRef={myReqRef} handleChange={(value) => setReqPic(value)} type="file" />
+                                    <label>Title</label>
+                                    <Input handleValue={reqState.title} handleChange={value => reqDispatch({ type: 'title', value })} type="text" placeholder="" />
+                                    <label>Description</label>
+                                    <Input handleValue={reqState.description} handleChange={value => reqDispatch({ type: 'description', value })} type="text" placeholder="" />
+                                    <label>City</label>
+                                    <Input handleValue={reqState.city} handleChange={value => reqDispatch({ type: 'city', value })} type="text" placeholder="" />
+                                    <label>Needs</label>
+                                    <Input handleValue={reqState.needs} handleChange={value => reqDispatch({ type: 'needs', value })} type="text" placeholder="" />
+                                    <label>Contact Number</label>
+                                    <Input handleValue={reqState.contact} handleChange={value => reqDispatch({ type: 'contact', value })} type="number" />
+                                    <details>
+                                        <summary>Location</summary>
+                                        <section>
+                                            <small><b>Note: </b>These fields will be used for informing the donator if they ever deliver a food or a package</small>
+                                            <label><b>Address</b></label>
+                                            <Input handleValue={reqState.address} handleChange={value => reqDispatch({ type: 'address', value })} type="text" />
+                                            <label><b>Receiver</b></label>
+                                            <Input handleValue={reqState.receiver} handleChange={value => reqDispatch({ type: 'receiver', value })} type="text" />
+                                            <label><b>Calibrate Position</b></label>
+                                            <section className="map-info">
+                                                <small>Coordinates: <br />Lat: {centerPos[0]}<br />Lng: {centerPos[1]}</small>
+                                                <AimOutlined onClick={calibratePos} />
+                                            </section>
+                                            <Map ref={myMapRef} onViewportChange={e => { setZoomMap(e.zoom); centralized() }} onmove={centralized} center={centerPos} zoom={zoomMap}>
+                                                <TileLayer
+                                                    attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+                                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                                />
+                                                <Marker position={centerPos} />
+                                            </Map>
                                         </section>
-                                        <Map ref={myMapRef} onViewportChange={e => { setZoomMap(e.zoom); centralized() }} onmove={centralized} center={centerPos} zoom={zoomMap}>
-                                            <TileLayer
-                                                attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-                                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                            />
-                                            <Marker position={centerPos} />
-                                        </Map>
-                                    </section>
-                                </details>
+                                    </details>
+                                    <button onClick={addRequest} className="request-add-button">Publish</button>
+                                </div>
                             </div>
                         </div>
                     </Route>
