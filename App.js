@@ -13,6 +13,8 @@ import Badge from './assets/Badge.js';
 import { useCookies, withCookies } from 'react-cookie';
 import { Map, TileLayer, Marker } from 'react-leaflet';
 import './style.css';
+import gcash from './public/images/gcash.png';
+import paymaya from './public/images/paymaya.png';
 
 const reducerFunction = (state, action) => {
     switch (action.type) {
@@ -245,7 +247,10 @@ const App = (props) => {
     const [requestOnDelete, setRequestOnDelete] = useState(-1);
     const [currentStepSponsor, setCurrentStepSponsor] = useState(1);
     const [isSponsorRegistering, setIsSponsorRegistering] = useState(false);
-    const [emailSent, setEmailSent] = useState(false)
+    const [emailSent, setEmailSent] = useState(false);
+    const [isLogDonate, setIsLogDonate] = useState(false);
+    const [donationIndex, setDonationIndex] = useState(-1);
+    const [currentDonationIndex, setCurrentDonationIndex] = useState(-1)
 
     const handleChangeStepSponsor = (type) => {
         setCurrentStepSponsor(type === 'inc' ? currentStepSponsor + 1 : currentStepSponsor - 1)
@@ -324,10 +329,11 @@ const App = (props) => {
                 })
                     .then(response => response.json())
                     .then(response => {
-                        console.log(response);
+                        setIsSponsorRegistering(false);
                         if (response.message === "added") {
-                            setIsSponsorRegistering(false);
                             setEmailSent(true);
+                        } else if (response.message === 'email already') {
+                            alert("Email already used")
                         } else {
                             alert("Error. Please Try Again.")
                         }
@@ -482,7 +488,8 @@ const App = (props) => {
                     setIsFetchingReqs(false)
                     setAllRequests(response.reqs);
                 } else if (response.message === 'none') {
-                    // show none
+                    setAllRequests([]);
+                    setIsFetchingReqs(false);
                 }
             })
     }
@@ -566,11 +573,25 @@ const App = (props) => {
             });
         }
 
-        if (search.resultCode === 'authorised') {
-            if (cookies.alt === 'falsify') {
-                alert("Donated!");
-                removeCookie('alt');
-            }
+        if (cookies.pd) {
+            fetch(`https://${process.env.HOST_S}:${process.env.PORT_S}/apply/donate`, {
+                method: "post",
+                headers: {
+                    'Content-Type': "application/json"
+                },
+                body: JSON.stringify({
+                    pd: cookies.pd
+                })
+            })
+                .then(response => response.json())
+                .then(response => {
+                    if (response.message === 'donated') {
+                        removeCookie('pd');
+                        alert("Your donation has been sent. Thank You!")
+                    } else if (response.message === 'error') {
+                        alert("Your donation has been sent.")
+                    }
+                })
         }
 
 
@@ -625,7 +646,7 @@ const App = (props) => {
                                     </div>
                                     : allRequests.length ?
                                         allRequests.map((item, i) => {
-                                            return <RequestCard onClick={() => handleRequest(i)} image={item.img} title={item.title} city={item.city} needs={['Food', 'Cash', 'PPEs']} />
+                                            return <RequestCard key={item._id} onClick={() => handleRequest(i)} image={item.img} title={item.title} city={item.city} needs={['Food', 'Cash', 'PPEs']} />
 
                                         })
 
@@ -822,7 +843,35 @@ const App = (props) => {
                                                         {
                                                             userRequests.length ?
                                                                 userRequests.map((request, i) => {
-                                                                    return <li><span onClick={() => openRequest(i)}>{new Date(request.date_equested).toLocaleString()}</span> {i === requestOnDelete ? <LoadingOutlined /> : <DeleteOutlined onClick={() => deleteReq(i)} />}</li>
+                                                                    return <li><span onClick={() => openRequest(i)}>{request.title}</span> {i === requestOnDelete ? <LoadingOutlined /> : <DeleteOutlined onClick={() => deleteReq(i)} />}</li>
+                                                                })
+                                                                : null
+                                                        }
+                                                    </ul>
+                                                </div>
+                                            </section>
+                                        </div>
+
+                                        <div className="padding-even">
+                                            <div className="_buildon-note">
+                                                <p>
+                                                    <b>Note: </b><i>Just click a certain request to view the details</i>
+                                                </p>
+                                            </div>
+                                            <section className="_buildon-user-panel">
+                                                <div className="_buildon-user-panel-title">
+                                                    <h1>Donation Logs</h1>
+                                                </div>
+                                                <div className="_buildon-user-panel-content">
+                                                    <ul>
+                                                        {
+                                                            userRequests.length ?
+                                                                userRequests.map((request, order) => {
+                                                                    if (request.donates) {
+                                                                        return request.donates.map((item, i) => {
+                                                                            return <li><span onClick={() => { setIsRequest(true); setIsLogDonate(true); setDonationIndex(i); setCurrentDonationIndex(order) }}>{request.title}</span><span></span></li>
+                                                                        })
+                                                                    }
                                                                 })
                                                                 : null
                                                         }
@@ -832,63 +881,70 @@ const App = (props) => {
                                         </div>
 
                                         <div className="request-add-dialog" style={{ display: isRequest ? "grid" : isCurrentReq ? "grid" : "none" }}>
-                                            <div className={isRequest ? "request-add-panel request-on" : isCurrentReq ? "request-add-panel request-on" : "none"}>
+                                            <div style={{ height: isLogDonate ? "50%" : "80%" }} className={isRequest ? "request-add-panel request-on" : isCurrentReq ? "request-add-panel request-on" : "none"}>
                                                 <div className="request-add-action">
-                                                    <CloseCircleOutlined onClick={() => { setIsRequest(false); setIsCurrentReq(false) }} />
+                                                    <CloseCircleOutlined onClick={() => { setIsRequest(false); setIsCurrentReq(false); setIsLogDonate(false) }} />
                                                 </div>
-                                                <div style={{ padding: "10px" }}>
-                                                    {
-                                                        isRequest ?
-                                                            <img src={reqPic ? URL.createObjectURL(myReqRef.current.files[0]) : null} />
-                                                            : isCurrentReq ?
-                                                                <img src={currentRequest[0].img} />
-                                                                : null
-                                                    }
-                                                    <label>Upload Picture <br /><small><b>Note: </b>use request-related picture</small></label>
-                                                    <Input disabled={isCurrentReq ? true : false} handleValue={reqPic} forRef={myReqRef} handleChange={(value) => setReqPic(value)} type="file" />
-                                                    <label>Title</label>
-                                                    <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].title : reqState.title} handleChange={value => reqDispatch({ type: 'title', value })} type="text" placeholder="" />
-                                                    <label>Description</label>
-                                                    <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].description : reqState.description} handleChange={value => reqDispatch({ type: 'description', value })} type="text" placeholder="" />
-                                                    <label>City</label>
-                                                    <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].city : reqState.city} handleChange={value => reqDispatch({ type: 'city', value })} type="text" placeholder="" />
-                                                    <label>Needs</label>
-                                                    <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].needs : reqState.needs} handleChange={value => reqDispatch({ type: 'needs', value })} type="text" placeholder="" />
-                                                    <label>Contact Number</label>
-                                                    <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].contact : reqState.contact} handleChange={value => reqDispatch({ type: 'contact', value })} type="number" />
-                                                    <details onClick={() => myMapRef.current.leafletElement.invalidateSize()}>
-                                                        <summary>Location</summary>
-                                                        <section>
-                                                            <small><b>Note: </b>These fields will be used for informing the donator if they ever deliver a food or a package</small>
-                                                            <label><b>Address</b></label>
-                                                            <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].address : reqState.address} handleChange={value => reqDispatch({ type: 'address', value })} type="text" />
-                                                            <label><b>Receiver</b></label>
-                                                            <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].receiver : reqState.receiver} handleChange={value => reqDispatch({ type: 'receiver', value })} type="text" />
-                                                            <label><b>Calibrate Position</b></label>
-                                                            <section className="map-info">
-                                                                <small>Coordinates: <br />Lat: {isCurrentReq ? currentRequest[0].lat : centerPos[0]}<br />Lng: {isCurrentReq ? currentRequest[0].lng : centerPos[1]}</small>
-                                                                <AimOutlined onClick={calibratePos} />
+                                                {!isLogDonate ?
+                                                    <div style={{ padding: "10px" }}>
+                                                        {
+                                                            isRequest ?
+                                                                <img src={reqPic ? URL.createObjectURL(myReqRef.current.files[0]) : null} />
+                                                                : isCurrentReq ?
+                                                                    <img src={currentRequest[0].img} />
+                                                                    : null
+                                                        }
+                                                        <label>Upload Picture <br /><small><b>Note: </b>use request-related picture</small></label>
+                                                        <Input disabled={isCurrentReq ? true : false} handleValue={reqPic} forRef={myReqRef} handleChange={(value) => setReqPic(value)} type="file" />
+                                                        <label>Title</label>
+                                                        <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].title : reqState.title} handleChange={value => reqDispatch({ type: 'title', value })} type="text" placeholder="" />
+                                                        <label>Description</label>
+                                                        <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].description : reqState.description} handleChange={value => reqDispatch({ type: 'description', value })} type="text" placeholder="" />
+                                                        <label>City</label>
+                                                        <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].city : reqState.city} handleChange={value => reqDispatch({ type: 'city', value })} type="text" placeholder="" />
+                                                        <label>Needs</label>
+                                                        <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].needs : reqState.needs} handleChange={value => reqDispatch({ type: 'needs', value })} type="text" placeholder="" />
+                                                        <label>Contact Number</label>
+                                                        <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].contact : reqState.contact} handleChange={value => reqDispatch({ type: 'contact', value })} type="number" />
+                                                        <details onClick={() => myMapRef.current.leafletElement.invalidateSize()}>
+                                                            <summary>Location</summary>
+                                                            <section>
+                                                                <small><b>Note: </b>These fields will be used for informing the donator if they ever deliver a food or a package</small>
+                                                                <label><b>Address</b></label>
+                                                                <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].address : reqState.address} handleChange={value => reqDispatch({ type: 'address', value })} type="text" />
+                                                                <label><b>Receiver</b></label>
+                                                                <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].receiver : reqState.receiver} handleChange={value => reqDispatch({ type: 'receiver', value })} type="text" />
+                                                                <label><b>Calibrate Position</b></label>
+                                                                <section className="map-info">
+                                                                    <small>Coordinates: <br />Lat: {isCurrentReq ? currentRequest[0].lat : centerPos[0]}<br />Lng: {isCurrentReq ? currentRequest[0].lng : centerPos[1]}</small>
+                                                                    <AimOutlined onClick={calibratePos} />
+                                                                </section>
+                                                                <Map ref={myMapRef} onViewportChange={e => { setZoomMap(e.zoom); centralized() }} onmove={centralized} center={isCurrentReq ? [currentRequest[0].lat, currentRequest[0].lng] : centerPos} zoom={zoomMap}>
+                                                                    <TileLayer
+                                                                        attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+                                                                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                                                    />
+                                                                    <Marker position={isCurrentReq ? [currentRequest[0].lat, currentRequest[0].lng] : centerPos} />
+                                                                </Map>
                                                             </section>
-                                                            <Map ref={myMapRef} onViewportChange={e => { setZoomMap(e.zoom); centralized() }} onmove={centralized} center={isCurrentReq ? [currentRequest[0].lat, currentRequest[0].lng] : centerPos} zoom={zoomMap}>
-                                                                <TileLayer
-                                                                    attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-                                                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                                                />
-                                                                <Marker position={isCurrentReq ? [currentRequest[0].lat, currentRequest[0].lng] : centerPos} />
-                                                            </Map>
-                                                        </section>
-                                                    </details>
-                                                    {
-                                                        isRequest ?
-                                                            <button onClick={addRequest} disabled={isPublishing} className="request-add-button">Publish</button>
-                                                            : isCurrentReq ?
-                                                                null
-                                                                : null
-                                                    }
-                                                </div>
+                                                        </details>
+                                                        {
+                                                            isRequest ?
+                                                                <button onClick={addRequest} disabled={isPublishing} className="request-add-button">Publish</button>
+                                                                : isCurrentReq ?
+                                                                    null
+                                                                    : null
+                                                        }
+                                                    </div>
+                                                    :
+                                                    <div style={{ height: "100%", padding: "10px", textAlign: 'center', display: "grid", justifyItems: 'center', alignItems: 'center' }}>
+                                                        <img src={userRequests[currentDonationIndex].donates[donationIndex].payment_method === 'gcash' ? gcash : paymaya} style={{ width: "50%", alignSelf: 'end' }} />
+                                                        <h1 style={{ fontSize: "11pt", alignSelf: 'start' }}>Amount: ₱{String(userRequests[currentDonationIndex].donates[donationIndex].amount).substr(0, String(userRequests[currentDonationIndex].donates[donationIndex].amount).length - 2)}.00</h1>
+                                                    </div>
+
+                                                }
                                             </div>
                                         </div>
-
                                     </>
                                     : null
                                 : null

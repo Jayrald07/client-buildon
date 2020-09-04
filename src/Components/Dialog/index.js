@@ -20,7 +20,7 @@ const Dialog = (props) => {
     const [isDonate, setIsDonate] = useState(false);
     const [amount, setAmount] = useState('');
 
-    const handleDonateNow = (pmethod) => {
+    const handleDonateNow = (pmethod, request_id) => {
 
         if (pmethod === 'food_panda') {
             location.href = `https://www.foodpanda.ph/restaurants/new?lat=${props.toShow.lat}&lng=${props.toShow.lng}&vertical=restaurants`
@@ -33,16 +33,21 @@ const Dialog = (props) => {
                     },
                     body: JSON.stringify({
                         paymentMethod: pmethod,
-                        amount: parseInt(String(amount).concat("00"))
+                        amount: parseInt(String(amount).concat("00")),
+                        request_id,
+                        token: cookies.token === 'undefined' ? undefined : cookies.token
                     })
                 })
                     .then(response => response.json())
                     .then(response => {
-                        console.log(response);
-                        if (response.action) {
-                            setCookie('alt', 'falsify', { path: '/', sameSite: "lax" })
-                            setCookie('pd', response.action.paymentData, { path: '/', sameSite: 'lax' })
-                            location.href = response.action.url
+                        if (response.message !== 'jwt expired') {
+                            if (response.action) {
+                                setCookie('alt', 'falsify', { path: '/', sameSite: "lax" })
+                                setCookie('pd', response.pd, { path: '/', sameSite: 'lax' })
+                                location.href = response.action
+                            }
+                        } else {
+                            alert("Please sign-in first.")
                         }
                     })
             } else {
@@ -126,8 +131,8 @@ const Dialog = (props) => {
                                 <Input style={{ marginTop: "5px" }} handleValue={amount} handleChange={value => setAmount(value)} type="number" placeholder="0.00" />
                             </section>
                             <ul>
-                                <li onClick={() => handleDonateNow("gcash")} className="fadeLeft"><img src={gcash} /><span>GCash</span></li>
-                                <li onClick={() => handleDonateNow("paymaya_wallet")}><img src={paymaya} /><span>PayMaya</span></li>
+                                <li onClick={() => handleDonateNow("gcash", props.toShow._id)} className="fadeLeft"><img src={gcash} /><span>GCash</span></li>
+                                <li onClick={() => handleDonateNow("paymaya_wallet", props.toShow._id)}><img src={paymaya} /><span>PayMaya</span></li>
                                 <label className="list-label">Food</label>
                                 <li className="list-also" onClick={() => handleDonateNow("food_panda")}><img src={foodpanda} /><span>Food Panda</span></li>
                             </ul>
