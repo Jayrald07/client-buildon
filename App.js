@@ -7,7 +7,7 @@ import Button from './assets/Button.js'
 import Steps, { StepAction, StepGroup, Step, StepEndButton } from './assets/Steps.js'
 import cake from './public/icons/birthday-cake.svg';
 import { FacebookButton } from './assets/SocialMediaButton.js'
-import { BrowserRouter as Router, Route, Switch, Link, useParams, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Switch, Link, useParams } from 'react-router-dom';
 import { InfoCircleFilled, PhoneFilled, DeleteOutlined, CloseCircleOutlined, AimOutlined, LoginOutlined, LoadingOutlined, PlusCircleOutlined, CameraOutlined, CheckOutlined, CloseCircleFilled } from '@ant-design/icons';
 import Badge from './assets/Badge.js';
 import { useCookies, withCookies } from 'react-cookie';
@@ -55,6 +55,139 @@ const requestReducer = (state, action) => {
     }
 }
 
+const sponsorReducer = (state, action) => {
+    switch (action.type) {
+        case 'fname':
+            return { ...state, fname: action.value };
+        case 'mname':
+            return { ...state, mname: action.value };
+        case 'lname':
+            return { ...state, lname: action.value };
+        case 'email':
+            return { ...state, email: action.value };
+        default:
+            break;
+    }
+}
+
+const Confirm = () => {
+    const { uid } = useParams();
+    const [status, setStatus] = useState('');
+    const [userData, setUserData] = useState({});
+    const [pass, setPass] = useState('');
+    const [pass2, setPass2] = useState('');
+    const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [isPageLoading, setIsPageLoading] = useState(true);
+
+    const setPassword = () => {
+        setIsLoading(true);
+        if (pass.trim() && pass2.trim()) {
+            if (pass.trim().length > 8 && pass.trim().length > 8) {
+                if (pass.trim() === pass2.trim()) {
+                    setError('');
+                    fetch(`https://${process.env.HOST_S}:${process.env.PORT_S}/setpassword`, {
+                        method: "put",
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            uid,
+                            password: pass2
+                        })
+                    })
+                        .then(response => response.json())
+                        .then(response => {
+                            setIsLoading(false);
+                            if (response.message === 'setted') {
+                                location.reload();
+                            } else {
+                                alert("Error. Please Try Again.")
+                            }
+                        })
+                } else {
+                    setError('Password not matched');
+                    setIsLoading(false);
+                }
+            } else {
+                setIsLoading(false);
+                setError('Password must have 8 characters')
+            }
+        } else {
+            setError('Complete All Fields.')
+            setIsLoading(false);
+        }
+    }
+
+    useEffect(() => {
+        fetch(`https://${process.env.HOST_S}:${process.env.PORT_S}/confirm/email`, {
+            method: "post",
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                uid
+            })
+        })
+            .then(response => response.json())
+            .then(response => {
+                setIsPageLoading(false)
+                if (response.message === 'found') {
+                    setStatus('setting');
+                    setUserData(response.result);
+                } else if (response.message === 'activated already') {
+                    setStatus(response.message);
+                } else if (response.message === 'no account') {
+                    setStatus('not found');
+                }
+            })
+    }, []);
+    return (
+        <div className="_buildon-center-v">
+            {
+                isPageLoading ?
+                    <LoadingOutlined />
+                    : null
+            }
+            {
+                status === 'setting' ?
+                    <>
+                        <div className="sent-email">
+                            <h1>Set your password</h1>
+                            <small style={{ color: "red", marginBottom: "10px", display: "block" }}>{error}</small>
+                            <Input handleValue={pass} handleChange={(value) => setPass(value)} type="password" placeholder="Password" />
+                            <Input handleValue={pass2} handleChange={(value) => setPass2(value)} type="password" placeholder="Confirm Password" />
+                        </div>
+                        <button disabled={isLoading ? true : false} onClick={setPassword} className="_buildon-button" style={{ alignSelf: "start" }}>{isLoading ? <LoadingOutlined /> : "Set Password"}</button>
+                    </>
+                    : null
+            }
+            {
+                status === 'activated already' ?
+                    <>
+                        <div className="sent-email">
+                            <h1>Activated!</h1>
+                            <small>Your Account is already activated.</small>
+                        </div>
+                        <a className="back-to-login" href="/login">Login</a>
+                    </>
+                    : null
+            }
+            {
+                status === 'not found' ?
+                    <>
+                        <div className="sent-email">
+                            <h1>Not Found!</h1>
+                            <small>We cannot find your account.</small>
+                        </div>
+                        <a className="back-to-login" href="/login">Login</a>
+                    </>
+                    : null
+            }
+        </div>
+    )
+}
+
 const App = (props) => {
     const [state, dispatch] = useReducer(reducerFunction, {
         job: { value: '', error: false },
@@ -74,6 +207,14 @@ const App = (props) => {
         address: '',
         receiver: ''
     })
+
+    const [sponsorState, sponsorDispatch] = useReducer(sponsorReducer, {
+        fname: '',
+        mname: '',
+        lname: '',
+        email: ''
+    })
+
     const [cookies, setCookie, removeCookie] = useCookies(['token']);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
@@ -101,57 +242,102 @@ const App = (props) => {
     const [isCurrentReq, setIsCurrentReq] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState('');
     const [isFetchinReqs, setIsFetchingReqs] = useState(true);
+    const [requestOnDelete, setRequestOnDelete] = useState(-1);
+    const [currentStepSponsor, setCurrentStepSponsor] = useState(1);
+    const [isSponsorRegistering, setIsSponsorRegistering] = useState(false);
+    const [emailSent, setEmailSent] = useState(false)
 
-    const handleRegister = () => {
-        const { job, first_name, last_name, middle_name, birthday, username, password } = state;
-        if (job.value.trim() && first_name.value.trim() && last_name.value.trim() && middle_name.value.trim() && birthday.value.trim() && username.value.trim() && password.value.trim() && takenPicture.trim() && myIDref.current.files.length) {
-            setIsRegistering(true);
-            const formData = new FormData();
+    const handleChangeStepSponsor = (type) => {
+        setCurrentStepSponsor(type === 'inc' ? currentStepSponsor + 1 : currentStepSponsor - 1)
+    }
 
-            function dataURLtoFile(dataurl, filename) {
-                var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-                    bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-                while (n--) {
-                    u8arr[n] = bstr.charCodeAt(n);
+    const handleRegister = (type) => {
+
+        if (type === 'individual') {
+            const { job, first_name, last_name, middle_name, birthday, username, password } = state;
+            if (job.value.trim() && first_name.value.trim() && last_name.value.trim() && middle_name.value.trim() && birthday.value.trim() && username.value.trim() && password.value.trim() && takenPicture.trim() && myIDref.current.files.length) {
+                setIsRegistering(true);
+                const formData = new FormData();
+
+                function dataURLtoFile(dataurl, filename) {
+                    var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+                        bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+                    while (n--) {
+                        u8arr[n] = bstr.charCodeAt(n);
+                    }
+                    return new File([u8arr], filename, { type: mime });
                 }
-                return new File([u8arr], filename, { type: mime });
+
+                var file = dataURLtoFile(takenPicture, 'source.png');
+
+                formData.append('job', state.job.value);
+                formData.append('first_name', state.first_name.value);
+                formData.append('last_name', state.last_name.value);
+                formData.append('middle_name', state.middle_name.value);
+                formData.append('birthday', state.birthday.value);
+                formData.append('username', state.username.value);
+                formData.append('password', state.password.value);
+                formData.append('source', file);
+                formData.append('target', myIDref.current.files[0]);
+                formData.append('user_type', 'individual');
+
+                fetch(`https://${process.env.HOST_S}:${process.env.PORT_S}/register`, {
+                    method: "post",
+                    body: formData
+                })
+                    .then(response => response.json())
+                    .then(response => {
+                        console.log(response);
+                        setToggleRegister(false)
+                        if (response.message === "username is taken") {
+                            setCurrentStep(1);
+                            setIsRegistering(false)
+                            dispatch({ type: 'username', value: state.username.value, error: true });
+                        } else if (response.message === "registered") {
+                            setCookie('token', response.token, { path: '/', sameSite: 'lax' })
+                            location.href = "/user"
+                        } else if (response.message === "Face not match") {
+                            alert('Face not match. Try Again.');
+                            setIsRegistering(false)
+                        }
+                    })
+            } else {
+                alert("Please complete all the credentials needed");
+            }
+        } else if (type === 'sponsor') {
+
+            setIsSponsorRegistering(true);
+
+            const { fname, lname, mname, email } = sponsorState;
+            if (fname.trim() && lname.trim() && mname.trim() && email.trim()) {
+                fetch(`https://${process.env.HOST_S}:${process.env.PORT_S}/register/sponsor`, {
+                    method: "post",
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        lname,
+                        mname,
+                        fname,
+                        email
+                    })
+                })
+                    .then(response => response.json())
+                    .then(response => {
+                        console.log(response);
+                        if (response.message === "added") {
+                            setIsSponsorRegistering(false);
+                            setEmailSent(true);
+                        } else {
+                            alert("Error. Please Try Again.")
+                        }
+                    })
+            } else {
+                alert("Please complete all the credentials needed")
             }
 
-            var file = dataURLtoFile(takenPicture, 'source.png');
-
-            formData.append('job', state.job.value);
-            formData.append('first_name', state.first_name.value);
-            formData.append('last_name', state.last_name.value);
-            formData.append('middle_name', state.middle_name.value);
-            formData.append('birthday', state.birthday.value);
-            formData.append('username', state.username.value);
-            formData.append('password', state.password.value);
-            formData.append('source', file);
-            formData.append('target', myIDref.current.files[0]);
-
-            fetch(`https://${process.env.HOST_S}:${process.env.PORT_S}/register`, {
-                method: "post",
-                body: formData
-            })
-                .then(response => response.json())
-                .then(response => {
-                    console.log(response);
-                    setToggleRegister(false)
-                    if (response.message === "username is taken") {
-                        setCurrentStep(1);
-                        setIsRegistering(false)
-                        dispatch({ type: 'username', value: state.username.value, error: true });
-                    } else if (response.message === "registered") {
-                        setCookie('token', response.token, { path: '/', sameSite: 'lax' })
-                        location.href = "/user"
-                    } else if (response.message === "Face not match") {
-                        alert('Face not match. Try Again.');
-                        setIsRegistering(false)
-                    }
-                })
-        } else {
-            alert("Please complete all the credentials needed");
         }
+
     }
 
     const handleRequest = (order) => {
@@ -343,6 +529,7 @@ const App = (props) => {
     }
 
     const deleteReq = (order) => {
+        setRequestOnDelete(order);
         fetch(`https://${process.env.HOST_S}:${process.env.PORT_S}/request/delete`, {
             method: "delete",
             headers: {
@@ -354,6 +541,7 @@ const App = (props) => {
         })
             .then(response => response.json())
             .then(response => {
+                setRequestOnDelete(-1);
                 if (response.message === 'deleted') {
                     getCredentials();
                 }
@@ -366,7 +554,6 @@ const App = (props) => {
     }
 
     useEffect(() => {
-
         let search = {
             payload: '',
             type: '',
@@ -455,12 +642,13 @@ const App = (props) => {
                     <Route exact path="/login" >
                         <section className="_buildon-center-v">
                             <form className="_buildon-form" onSubmit={handleLogin}>
-                                <label>Username</label>
+                                <label>Username/Email</label>
                                 <Input handleValue={loginUname} handleChange={value => setLoginUname(value)} type="text" name="uname" required />
                                 <label>Password</label>
                                 <Input handleValue={loginUpass} handleChange={value => setLoginUpass(value)} type="password" name="upass" />
                                 <Button><LoginOutlined /> Login</Button>
-                                <Link to="/register" className="_buildon-create-account">Create Account</Link>
+                                <Link to="/register" className="_buildon-create-account">Create Individual Account</Link>
+                                <Link to="/register/sponsor" className="_buildon-create-account">Create Sponsor Account</Link>
                                 <div className="_buildon-text-divider">
                                     <span>
                                         or
@@ -469,6 +657,48 @@ const App = (props) => {
                             </form>
                             <FacebookButton />
                         </section>
+                    </Route>
+                    <Route exact path="/register/sponsor">
+
+                        {
+                            !isSponsorRegistering ?
+                                !emailSent ?
+                                    <Steps currentStep={currentStepSponsor}>
+                                        <StepGroup>
+                                            <Step>
+                                                <h1>Basic Profile</h1>
+                                                <Input handleValue={sponsorState.lname} handleChange={(value) => sponsorDispatch({ type: 'lname', value })} type="text" placeholder="Last Name" />
+                                                <Input handleValue={sponsorState.fname} handleChange={(value) => sponsorDispatch({ type: 'fname', value })} type="text" placeholder="First Name" />
+                                                <Input handleValue={sponsorState.mname} handleChange={(value) => sponsorDispatch({ type: 'mname', value })} type="text" placeholder="Middle Name" />
+                                                <Input handleValue={sponsorState.email} handleChange={(value) => sponsorDispatch({ type: 'email', value })} type="email" placeholder="Email Address" />
+                                            </Step>
+                                            <Step>
+                                                <h1>Review</h1>
+                                                <section className="review-panel">
+                                                    <h1>Full Name: </h1><small>{`${sponsorState.lname}, ${sponsorState.fname} ${sponsorState.mname}`}</small><br />
+                                                    <h1>Email Address: </h1><small>{sponsorState.email}</small>
+                                                </section>
+                                            </Step>
+                                            <Step>
+                                                <h1>Confirmation</h1>
+                                                <div className="confirmation-sponsor">
+                                                    <small>
+                                                        Once you click the register button, an email confirmation will be sent to you which you can set your own password
+                                                </small>
+                                                </div>
+                                            </Step>
+                                        </StepGroup>
+                                        <StepAction>
+                                            <button className="_buildon-step-button" onClick={() => handleChangeStepSponsor('dec')}>Back</button>
+                                            <button className="_buildon-step-button" onClick={() => handleChangeStepSponsor('inc')}>Next</button>
+                                            <button onClick={() => handleRegister('sponsor')} className="_buildon-button _buildon-step-end-button">Register</button>
+                                        </StepAction>
+                                    </Steps>
+                                    : <div className="_buildon-center-v"><div className="sent-email"><h1>Email has sent!</h1><small>Please confirm your email to set your password.</small></div><a className="back-to-login" href="/login">Login</a></div>
+
+                                : <div className="_buildon-center-v"><LoadingOutlined /></div>
+                        }
+
                     </Route>
                     <Route exact path="/register">
                         {
@@ -547,7 +777,7 @@ const App = (props) => {
                                     <StepAction>
                                         <button className="_buildon-step-button" onClick={() => handleChangeStep('dec')}>Back</button>
                                         <button className="_buildon-step-button" onClick={() => handleChangeStep('inc')}>Next</button>
-                                        <button onClick={handleRegister} className="_buildon-button _buildon-step-end-button">Register</button>
+                                        <button onClick={() => handleRegister('individual')} className="_buildon-button _buildon-step-end-button">Register</button>
                                     </StepAction>
                                 </Steps>
 
@@ -565,95 +795,106 @@ const App = (props) => {
                                 <h1>{userData._id ? `${userData.last_name}, ${userData.first_name} ${userData.middle_name}` : "-"}</h1>
                                 <Badge>
                                     {
-                                        userData._id ? `${userData.job}` : "-"
+                                        userData._id ? userData.job ? `${userData.job}` : 'Sponsor' : "-"
                                     }
                                 </Badge>
 
                             </section>
                         </div>
-                        <div className="padding-even">
-                            <div className="_buildon-note">
-                                <p>
-                                    <b>Note: </b><i>Just click a certain request to view the details</i>
-                                </p>
-                            </div>
-                            <section className="_buildon-user-panel">
-                                <div className="_buildon-user-panel-title">
-                                    <h1>Requests</h1>
-                                    <PlusCircleOutlined onClick={() => setIsRequest(true)} />
-                                </div>
-                                <div className="_buildon-user-panel-content">
-                                    <ul>
-                                        {
-                                            userRequests.length ?
-                                                userRequests.map((request, i) => {
-                                                    return <li onClick={() => openRequest(i)}><span>{new Date(request.date_equested).toLocaleString()}</span> <DeleteOutlined onClick={() => deleteReq(i)} /></li>
-                                                })
-                                                : null
-                                        }
-                                    </ul>
-                                </div>
-                            </section>
-                        </div>
 
-                        <div className="request-add-dialog" style={{ display: isRequest ? "grid" : isCurrentReq ? "grid" : "none" }}>
-                            <div className={isRequest ? "request-add-panel request-on" : isCurrentReq ? "request-add-panel request-on" : "none"}>
-                                <div className="request-add-action">
-                                    <CloseCircleOutlined onClick={() => { setIsRequest(false); setIsCurrentReq(false) }} />
-                                </div>
-                                <div style={{ padding: "10px" }}>
-                                    {
-                                        isRequest ?
-                                            <img src={reqPic ? URL.createObjectURL(myReqRef.current.files[0]) : null} />
-                                            : isCurrentReq ?
-                                                <img src={currentRequest[0].img} />
-                                                : null
-                                    }
-                                    <label>Upload Picture <br /><small><b>Note: </b>use request-related picture</small></label>
-                                    <Input disabled={isCurrentReq ? true : false} handleValue={reqPic} forRef={myReqRef} handleChange={(value) => setReqPic(value)} type="file" />
-                                    <label>Title</label>
-                                    <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].title : reqState.title} handleChange={value => reqDispatch({ type: 'title', value })} type="text" placeholder="" />
-                                    <label>Description</label>
-                                    <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].description : reqState.description} handleChange={value => reqDispatch({ type: 'description', value })} type="text" placeholder="" />
-                                    <label>City</label>
-                                    <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].city : reqState.city} handleChange={value => reqDispatch({ type: 'city', value })} type="text" placeholder="" />
-                                    <label>Needs</label>
-                                    <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].needs : reqState.needs} handleChange={value => reqDispatch({ type: 'needs', value })} type="text" placeholder="" />
-                                    <label>Contact Number</label>
-                                    <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].contact : reqState.contact} handleChange={value => reqDispatch({ type: 'contact', value })} type="number" />
-                                    <details>
-                                        <summary>Location</summary>
-                                        <section>
-                                            <small><b>Note: </b>These fields will be used for informing the donator if they ever deliver a food or a package</small>
-                                            <label><b>Address</b></label>
-                                            <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].address : reqState.address} handleChange={value => reqDispatch({ type: 'address', value })} type="text" />
-                                            <label><b>Receiver</b></label>
-                                            <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].receiver : reqState.receiver} handleChange={value => reqDispatch({ type: 'receiver', value })} type="text" />
-                                            <label><b>Calibrate Position</b></label>
-                                            <section className="map-info">
-                                                <small>Coordinates: <br />Lat: {isCurrentReq ? currentRequest[0].lat : centerPos[0]}<br />Lng: {isCurrentReq ? currentRequest[0].lng : centerPos[1]}</small>
-                                                <AimOutlined onClick={calibratePos} />
+                        {
+                            userData._id ?
+                                userData.job ?
+                                    <>
+                                        <div className="padding-even">
+                                            <div className="_buildon-note">
+                                                <p>
+                                                    <b>Note: </b><i>Just click a certain request to view the details</i>
+                                                </p>
+                                            </div>
+                                            <section className="_buildon-user-panel">
+                                                <div className="_buildon-user-panel-title">
+                                                    <h1>Requests</h1>
+                                                    <PlusCircleOutlined onClick={() => setIsRequest(true)} />
+                                                </div>
+                                                <div className="_buildon-user-panel-content">
+                                                    <ul>
+                                                        {
+                                                            userRequests.length ?
+                                                                userRequests.map((request, i) => {
+                                                                    return <li><span onClick={() => openRequest(i)}>{new Date(request.date_equested).toLocaleString()}</span> {i === requestOnDelete ? <LoadingOutlined /> : <DeleteOutlined onClick={() => deleteReq(i)} />}</li>
+                                                                })
+                                                                : null
+                                                        }
+                                                    </ul>
+                                                </div>
                                             </section>
-                                            <Map ref={myMapRef} onViewportChange={e => { setZoomMap(e.zoom); centralized() }} onmove={centralized} center={isCurrentReq ? [currentRequest[0].lat, currentRequest[0].lng] : centerPos} zoom={zoomMap}>
-                                                <TileLayer
-                                                    attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-                                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                                />
-                                                <Marker position={isCurrentReq ? [currentRequest[0].lat, currentRequest[0].lng] : centerPos} />
-                                            </Map>
-                                        </section>
-                                    </details>
-                                    {
-                                        isRequest ?
-                                            <button onClick={addRequest} disabled={isPublishing} className="request-add-button">Publish</button>
-                                            : isCurrentReq ?
-                                                null
-                                                : null
-                                    }
-                                </div>
-                            </div>
-                        </div>
+                                        </div>
+
+                                        <div className="request-add-dialog" style={{ display: isRequest ? "grid" : isCurrentReq ? "grid" : "none" }}>
+                                            <div className={isRequest ? "request-add-panel request-on" : isCurrentReq ? "request-add-panel request-on" : "none"}>
+                                                <div className="request-add-action">
+                                                    <CloseCircleOutlined onClick={() => { setIsRequest(false); setIsCurrentReq(false) }} />
+                                                </div>
+                                                <div style={{ padding: "10px" }}>
+                                                    {
+                                                        isRequest ?
+                                                            <img src={reqPic ? URL.createObjectURL(myReqRef.current.files[0]) : null} />
+                                                            : isCurrentReq ?
+                                                                <img src={currentRequest[0].img} />
+                                                                : null
+                                                    }
+                                                    <label>Upload Picture <br /><small><b>Note: </b>use request-related picture</small></label>
+                                                    <Input disabled={isCurrentReq ? true : false} handleValue={reqPic} forRef={myReqRef} handleChange={(value) => setReqPic(value)} type="file" />
+                                                    <label>Title</label>
+                                                    <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].title : reqState.title} handleChange={value => reqDispatch({ type: 'title', value })} type="text" placeholder="" />
+                                                    <label>Description</label>
+                                                    <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].description : reqState.description} handleChange={value => reqDispatch({ type: 'description', value })} type="text" placeholder="" />
+                                                    <label>City</label>
+                                                    <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].city : reqState.city} handleChange={value => reqDispatch({ type: 'city', value })} type="text" placeholder="" />
+                                                    <label>Needs</label>
+                                                    <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].needs : reqState.needs} handleChange={value => reqDispatch({ type: 'needs', value })} type="text" placeholder="" />
+                                                    <label>Contact Number</label>
+                                                    <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].contact : reqState.contact} handleChange={value => reqDispatch({ type: 'contact', value })} type="number" />
+                                                    <details onClick={() => myMapRef.current.leafletElement.invalidateSize()}>
+                                                        <summary>Location</summary>
+                                                        <section>
+                                                            <small><b>Note: </b>These fields will be used for informing the donator if they ever deliver a food or a package</small>
+                                                            <label><b>Address</b></label>
+                                                            <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].address : reqState.address} handleChange={value => reqDispatch({ type: 'address', value })} type="text" />
+                                                            <label><b>Receiver</b></label>
+                                                            <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].receiver : reqState.receiver} handleChange={value => reqDispatch({ type: 'receiver', value })} type="text" />
+                                                            <label><b>Calibrate Position</b></label>
+                                                            <section className="map-info">
+                                                                <small>Coordinates: <br />Lat: {isCurrentReq ? currentRequest[0].lat : centerPos[0]}<br />Lng: {isCurrentReq ? currentRequest[0].lng : centerPos[1]}</small>
+                                                                <AimOutlined onClick={calibratePos} />
+                                                            </section>
+                                                            <Map ref={myMapRef} onViewportChange={e => { setZoomMap(e.zoom); centralized() }} onmove={centralized} center={isCurrentReq ? [currentRequest[0].lat, currentRequest[0].lng] : centerPos} zoom={zoomMap}>
+                                                                <TileLayer
+                                                                    attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+                                                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                                                />
+                                                                <Marker position={isCurrentReq ? [currentRequest[0].lat, currentRequest[0].lng] : centerPos} />
+                                                            </Map>
+                                                        </section>
+                                                    </details>
+                                                    {
+                                                        isRequest ?
+                                                            <button onClick={addRequest} disabled={isPublishing} className="request-add-button">Publish</button>
+                                                            : isCurrentReq ?
+                                                                null
+                                                                : null
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </>
+                                    : null
+                                : null
+                        }
                     </Route>
+                    <Route exact path="/confirm/:uid" children={<Confirm />} />
                 </Switch>
             </Router>
         </>

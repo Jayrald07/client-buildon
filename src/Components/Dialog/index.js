@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import './index.css';
 import TabBar, { Tab } from '../Tabs/';
 import { InfoCircleFilled, PhoneFilled, CloseCircleOutlined, } from '@ant-design/icons'
@@ -15,6 +15,7 @@ import { Map, TileLayer, Marker } from 'react-leaflet';
 
 const Dialog = (props) => {
     const [cookies, setCookie, removeCookie] = useCookies(['pd']);
+    const myCloneMap = useRef();
 
     const [isDonate, setIsDonate] = useState(false);
     const [amount, setAmount] = useState('');
@@ -87,12 +88,14 @@ const Dialog = (props) => {
                                     <h1>Send a package?</h1>
                                     <p>
                                         Click for more details
-                                        <details>
+                                        <details className="request-location-details" onClick={() => myCloneMap.current.leafletElement.invalidateSize()}>
                                             <summary>Recepient Details</summary>
                                             <p>
-                                                <h1>Receiver</h1>
-                                                <small>{props.toShow.receiver}</small>
-                                                <Map center={[props.toShow.lat, props.toShow.lng]} zoom={15}>
+                                                <h1 style={{ fontSize: "10pt" }}>Receiver</h1>
+                                                <small style={{ fontSize: "9pt", display: "block", marginBottom: "10px" }}>{props.toShow.receiver}</small>
+                                                <h1 style={{ fontSize: "10pt" }}>Coords</h1>
+                                                <small style={{ fontSize: "9pt", display: "block", marginBottom: "10px" }}>Lat: {props.toShow.lat}<br />Lng: {props.toShow.lng}</small>
+                                                <Map ref={myCloneMap} center={[props.toShow.lat, props.toShow.lng]} zoom={15}>
                                                     <TileLayer
                                                         attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
                                                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
