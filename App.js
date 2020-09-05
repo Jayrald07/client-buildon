@@ -851,7 +851,6 @@ const App = (props) => {
                                                 </div>
                                             </section>
                                         </div>
-
                                         <div className="padding-even">
                                             <div className="_buildon-note">
                                                 <p>
@@ -937,16 +936,44 @@ const App = (props) => {
                                                         }
                                                     </div>
                                                     :
-                                                    <div style={{ height: "100%", padding: "10px", textAlign: 'center', display: "grid", justifyItems: 'center', alignItems: 'center' }}>
-                                                        <img src={userRequests[currentDonationIndex].donates[donationIndex].payment_method === 'gcash' ? gcash : paymaya} style={{ width: "50%", alignSelf: 'end' }} />
-                                                        <h1 style={{ fontSize: "11pt", alignSelf: 'start' }}>Amount: ₱{String(userRequests[currentDonationIndex].donates[donationIndex].amount).substr(0, String(userRequests[currentDonationIndex].donates[donationIndex].amount).length - 2)}.00</h1>
+                                                    <div style={{ height: "100%", padding: "10px", display: "grid" }}>
+                                                        <img src={userRequests[currentDonationIndex].donates[donationIndex].payment_method === 'gcash' ? gcash : paymaya} style={{ width: "50%", justifySelf: 'center' }} />
+                                                        <section className="donation-summary" style={{ alignSelf: 'start' }}>
+                                                            <details>
+                                                                <summary>Amount</summary>
+                                                                <small>₱{parseInt(String(userRequests[currentDonationIndex].donates[donationIndex].amount).substr(0, String(userRequests[currentDonationIndex].donates[donationIndex].amount).length - 2)).toLocaleString()}.00</small>
+                                                            </details>
+                                                            <details>
+                                                                <summary>Date Donated</summary>
+                                                                <small>{userRequests[currentDonationIndex].donates[donationIndex].date_donated}</small>
+                                                            </details>
+                                                        </section>
                                                     </div>
 
                                                 }
                                             </div>
                                         </div>
                                     </>
-                                    : null
+                                    :
+                                    <>
+                                        <div className="padding-even">
+                                            <div className="_buildon-note">
+                                                <p>
+                                                    <b>Note: </b><i>Just click a certain item to view the details of your donation</i>
+                                                </p>
+                                            </div>
+                                            <section className="_buildon-user-panel">
+                                                <div className="_buildon-user-panel-title">
+                                                    <h1>Donated</h1>
+                                                </div>
+                                                <div className="_buildon-user-panel-content">
+                                                    <ul>
+
+                                                    </ul>
+                                                </div>
+                                            </section>
+                                        </div>
+                                    </>
                                 : null
                         }
                     </Route>

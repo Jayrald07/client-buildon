@@ -569,6 +569,15 @@ body,html {
   color: dodgerblue
 }
 
+.donation-summary details:first-child {
+  margin-bottom: 10px
+}
+
+.donation-summary details small{
+  display: block;
+  padding:10px
+}
+
 @keyframes reqOn {
   from {
       /* transform: translateY(-40px); */
