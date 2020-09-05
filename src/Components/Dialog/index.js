@@ -26,7 +26,7 @@ const Dialog = (props) => {
             location.href = `https://www.foodpanda.ph/restaurants/new?lat=${props.toShow.lat}&lng=${props.toShow.lng}&vertical=restaurants`
         } else {
             if (parseInt(amount)) {
-                fetch('https://107.21.5.198:8080/test', {
+                fetch(`https://${process.env.HOST_S}:${process.env.PORT_S}/test`, {
                     method: "post",
                     headers: {
                         'Content-Type': 'application/json'
