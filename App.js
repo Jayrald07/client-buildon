@@ -251,6 +251,9 @@ const App = (props) => {
     const [isLogDonate, setIsLogDonate] = useState(false);
     const [donationIndex, setDonationIndex] = useState(-1);
     const [currentDonationIndex, setCurrentDonationIndex] = useState(-1)
+    const [sponsorDonations, setSponsorDonations] = useState([]);
+    const [isSponsorDialog, setIsSponsorDialog] = useState(false);
+    const [currentSponsorDonation, setCurrentSponsorDonation] = useState(-1);
 
     const handleChangeStepSponsor = (type) => {
         setCurrentStepSponsor(type === 'inc' ? currentStepSponsor + 1 : currentStepSponsor - 1)
@@ -446,6 +449,33 @@ const App = (props) => {
 
     }
 
+    const getDonation = () => {
+        if (cookies.token.trim()) {
+            fetch(`https://${process.env.HOST_S}:${process.env.PORT_S}/sponsor/donation`, {
+                method: "post",
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    token: cookies.token
+                })
+            })
+                .then(response => response.json())
+                .then(response => {
+                    if (response.message === 'got') {
+                        setSponsorDonations(response.result);
+                    } else if (response.message === 'none') {
+                        setSponsorDonations([]);
+                    } else if (response.message === 'jwt expired') {
+                        location.href = "/login";
+                    }
+                })
+        } else {
+            alert("Malicious access.");
+            location.reload();
+        }
+    }
+
     const getCredentials = (tkn) => {
         fetch(`https://${process.env.HOST_S}:${process.env.PORT_S}/credentials`, {
             method: 'post',
@@ -612,12 +642,14 @@ const App = (props) => {
                     setCookie('token', response.token, { path: '/', sameSite: 'lax' });
                     getCredentials(response.token);
                     setIsLegitAccount(true)
+                    getDonation();
                 } else if (response.message === 'good') {
                     setIsLegitAccount(true)
                     if (location.pathname === '/login' || location.pathname === '/login/' || location.pathname === '/register' || location.pathname === '/register/') {
                         location.href = "/user"
                     } else if (location.pathname === '/user' || location.pathname === '/user/') {
-                        getCredentials()
+                        getCredentials();
+                        getDonation();
                     }
                 } else if (response.message === "jwt expired" || response.message === "login first") {
                     removeCookie('token');
@@ -880,7 +912,7 @@ const App = (props) => {
                                         </div>
 
                                         <div className="request-add-dialog" style={{ display: isRequest ? "grid" : isCurrentReq ? "grid" : "none" }}>
-                                            <div style={{ height: isLogDonate ? "50%" : "80%" }} className={isRequest ? "request-add-panel request-on" : isCurrentReq ? "request-add-panel request-on" : "none"}>
+                                            <div style={{ height: isLogDonate ? "auto" : "80%" }} className={isRequest ? "request-add-panel request-on" : isCurrentReq ? "request-add-panel request-on" : "none"}>
                                                 <div className="request-add-action">
                                                     <CloseCircleOutlined onClick={() => { setIsRequest(false); setIsCurrentReq(false); setIsLogDonate(false) }} />
                                                 </div>
@@ -893,8 +925,14 @@ const App = (props) => {
                                                                     <img src={currentRequest[0].img} />
                                                                     : null
                                                         }
-                                                        <label>Upload Picture <br /><small><b>Note: </b>use request-related picture</small></label>
-                                                        <Input disabled={isCurrentReq ? true : false} handleValue={reqPic} forRef={myReqRef} handleChange={(value) => setReqPic(value)} type="file" />
+                                                        {
+                                                            !isCurrentReq ?
+                                                                <>
+                                                                    <label>Upload Picture <br /><small><b>Note: </b>use request-related picture</small></label>
+                                                                    <Input disabled={isCurrentReq ? true : false} handleValue={reqPic} forRef={myReqRef} handleChange={(value) => setReqPic(value)} type="file" />
+                                                                </>
+                                                                : null
+                                                        }
                                                         <label>Title</label>
                                                         <Input disabled={isCurrentReq ? true : false} handleValue={isCurrentReq ? currentRequest[0].title : reqState.title} handleChange={value => reqDispatch({ type: 'title', value })} type="text" placeholder="" />
                                                         <label>Description</label>
@@ -937,7 +975,7 @@ const App = (props) => {
                                                     </div>
                                                     :
                                                     <div style={{ height: "100%", padding: "10px", display: "grid" }}>
-                                                        <img src={userRequests[currentDonationIndex].donates[donationIndex].payment_method === 'gcash' ? gcash : paymaya} style={{ width: "50%", justifySelf: 'center' }} />
+                                                        <img src={userRequests[currentDonationIndex].donates[donationIndex].payment_method === 'gcash' ? gcash : paymaya} style={{ width: "50%", justifySelf: 'center', margin: "10px 0" }} />
                                                         <section className="donation-summary" style={{ alignSelf: 'start' }}>
                                                             <details>
                                                                 <summary>Amount</summary>
@@ -949,7 +987,6 @@ const App = (props) => {
                                                             </details>
                                                         </section>
                                                     </div>
-
                                                 }
                                             </div>
                                         </div>
@@ -968,10 +1005,36 @@ const App = (props) => {
                                                 </div>
                                                 <div className="_buildon-user-panel-content">
                                                     <ul>
-
+                                                        {
+                                                            sponsorDonations.length ?
+                                                                sponsorDonations.map((donation, i) => {
+                                                                    return <li onClick={() => { setIsSponsorDialog(true); setCurrentSponsorDonation(donation) }} key={donation.title}><span>{donation.title}</span><span></span></li>
+                                                                })
+                                                                : null
+                                                        }
                                                     </ul>
                                                 </div>
                                             </section>
+                                        </div>
+
+                                        <div className="request-add-dialog" style={{ display: isSponsorDialog ? "grid" : "none" }}>
+                                            <div style={{ height: "auto" }} className={isSponsorDialog ? "request-add-panel request-on" : "none"}>
+                                                <div className="request-add-action">
+                                                    <CloseCircleOutlined onClick={() => setIsSponsorDialog(false)} />
+                                                </div>
+                                                <div style={{ height: "100%", padding: "10px", display: "grid" }}>
+                                                    <section className="donation-summary" style={{ alignSelf: 'start' }}>
+                                                        <details>
+                                                            <summary>Amount</summary>
+                                                            <small>₱{parseInt(String(currentSponsorDonation.amount).substr(0, String(currentSponsorDonation.amount).length - 2)).toLocaleString()}.00</small>
+                                                        </details>
+                                                        <details>
+                                                            <summary>Date Donated</summary>
+                                                            <small>{currentSponsorDonation.date_added}</small>
+                                                        </details>
+                                                    </section>
+                                                </div>
+                                            </div>
                                         </div>
                                     </>
                                 : null

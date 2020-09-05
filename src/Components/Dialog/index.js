@@ -35,7 +35,8 @@ const Dialog = (props) => {
                         paymentMethod: pmethod,
                         amount: parseInt(String(amount).concat("00")),
                         request_id,
-                        token: cookies.token === 'undefined' ? undefined : cookies.token
+                        token: cookies.token === 'undefined' ? undefined : cookies.token,
+                        title: props.toShow.title
                     })
                 })
                     .then(response => response.json())
